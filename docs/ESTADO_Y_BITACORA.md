@@ -290,3 +290,12 @@ En cada sesión de trabajo:
 7. Terminar cada sesión indicando qué quedó confirmado y cuál es el siguiente paso.
 
 **Nota de continuidad:** esta documentación es la referencia persistente del proyecto. No sustituye una comprobación técnica nueva cuando el estado del equipo pueda haber cambiado.
+
+## Prueba de creación de archivo: verificación persistente
+
+- Fecha: 2026-10-24.
+- El modelo propuso la acción `crear_archivo` para `nota_agente.txt` con el contenido `Mi agente ha creado su primer archivo.`.
+- El usuario autorizó la acción escribiendo `SI`; el programa informó `Archivo creado: nota_agente.txt`.
+- Después, el usuario ejecutó `Get-Content "D:\AgenteIA\sandbox\nota_agente.txt"` y confirmó que el contenido leído del disco coincide exactamente con el solicitado.
+- Estado: creación y lectura posterior verificadas. El ciclo sigue siendo supervisado y limitado a herramientas permitidas; aún no prueba autonomía prolongada ni aislamiento robusto.
+

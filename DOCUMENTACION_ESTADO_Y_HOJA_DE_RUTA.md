@@ -34,3 +34,41 @@ El usuario confirmó una prueba de creación de archivo: el agente pidió autori
 2. Ejecutar una compilación sintáctica.
 3. Probar una consulta web real y confirmar que el agente usa los resultados y cita las URL.
 4. Si DuckDuckGo cambia el HTML o bloquea la consulta, sustituir el proveedor por una API de búsqueda estable.
+
+
+## Actualización de entorno: WSL 2 (2026-10-24)
+
+### Objetivo
+Preparar Windows 10 Home para ejecutar Docker y, posteriormente, desplegar SearXNG como metabuscador local para el agente. Esta configuración es independiente del código del agente y no modifica el archivo original del proyecto.
+
+### Acciones completadas
+1. Se habilitaron las características de Windows **Windows Subsystem for Linux** y **Virtual Machine Platform**. Windows indicó que era necesario reiniciar; el usuario reinició el equipo.
+2. Se instaló la distribución Ubuntu mediante `wsl --install -d Ubuntu`.
+3. Se creó el usuario Linux `agente`.
+4. Se configuró WSL 2 como versión predeterminada mediante `wsl --set-default-version 2`.
+5. La primera conversión indicó que faltaba actualizar el componente de kernel de WSL 2.
+6. Se ejecutó `wsl --update`; la salida confirmó que WSL se instaló correctamente.
+7. Se volvió a ejecutar `wsl --set-version Ubuntu 2`; la salida confirmó: «La operación se completó correctamente».
+8. Verificación final con `wsl --list --verbose`:
+
+   ```text
+     NAME      STATE           VERSION
+   * Ubuntu    Stopped         2
+   ```
+
+### Estado verificado
+- Ubuntu está instalado.
+- Ubuntu está configurado como **WSL 2** (verificado por la columna VERSION).
+- El estado `Stopped` es normal cuando la distribución no está ejecutándose; no indica un fallo.
+- WSL se actualizó correctamente.
+- Docker y SearXNG **todavía no están instalados**.
+
+### Seguridad
+Durante la configuración se compartió en el chat una contraseña de Ubuntu. Por precaución, cambiarla por una contraseña única antes de usar el entorno para tareas sensibles. No incluir contraseñas ni otros secretos en este repositorio.
+
+### Próximos pasos
+1. Comprobar que Ubuntu inicia correctamente.
+2. Instalar Docker Desktop para Windows y habilitar la integración con la distribución Ubuntu en WSL 2, siguiendo la documentación oficial y verificando los requisitos de Windows.
+3. Probar que Docker responde desde el entorno elegido.
+4. Desplegar SearXNG y comprobar una búsqueda local.
+5. Diseñar y probar la integración del agente con el buscador sin ejecutar instrucciones procedentes de páginas web ni enviar archivos locales.

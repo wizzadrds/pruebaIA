@@ -76,6 +76,7 @@ def new_task(description):
     save_tasks(tasks)
     print(f"Tarea guardada: {task_id}")
     print("Estado: pendiente (no se ha ejecutado ninguna acción).")
+    return task_id
 
 
 def list_tasks():
@@ -108,7 +109,7 @@ def change_status(task_id, status):
                 t["nota"] = "Revisar manualmente; no se reanudará automáticamente."
             save_tasks(tasks)
             print(f'Tarea {task_id}: estado actualizado a {status}.')
-            return
+            return task_id
     raise KeyError(f"No existe la tarea {task_id}.")
 
 

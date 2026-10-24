@@ -135,3 +135,32 @@ Durante la configuración se compartió en el chat una contraseña de Ubuntu. Po
 3. Probar que Docker responde desde el entorno elegido.
 4. Desplegar SearXNG y comprobar una búsqueda local.
 5. Diseñar y probar la integración del agente con el buscador sin ejecutar instrucciones procedentes de páginas web ni enviar archivos locales.
+
+## Actualización de entorno: Docker Desktop y SearXNG local (2026-10-24)
+
+### Acciones completadas
+1. Se instaló Docker Desktop y se verificó la versión de CLI: `Docker version 29.9.2`.
+2. Tras iniciar Docker Desktop, `docker info --format "{{.ServerVersion}}"` devolvió `29.9.2`, confirmando que el motor responde.
+3. Se creó la carpeta independiente `D:\\AgenteIA\\searxng`, sin modificar el código original del agente.
+4. Se descargaron desde el repositorio oficial de SearXNG los archivos `container/docker-compose.yml` y `container/.env.example`.
+5. Se configuró `.env` para publicar SearXNG en `127.0.0.1:8080`, con versión `latest`.
+6. `docker compose config` validó la configuración con dos servicios: `core` (SearXNG) y `valkey`.
+7. `docker compose up -d` descargó y arrancó ambos contenedores. `docker compose ps` mostró los dos como `Up`; el puerto de SearXNG quedó publicado en `127.0.0.1:8080`.
+8. La petición HTTP a `http://127.0.0.1:8080/` devolvió el código `200`.
+9. La API JSON inicialmente devolvió `403`. Se creó `core-config/settings.yml` con `use_default_settings: true` y `search.formats: [html, json]`, y se reinició el servicio `core`.
+10. La búsqueda de prueba `q=Python 3.14&format=json` devolvió resultados con títulos, URLs y extractos, incluyendo páginas de Python.org y la documentación de Python.
+
+### Estado actual
+- SearXNG está disponible localmente en `http://127.0.0.1:8080`.
+- La API JSON responde con resultados.
+- El servicio está limitado a la interfaz de loopback del PC; no se ha publicado intencionadamente a la red externa.
+- Esto confirma que el metabuscador funciona, pero aún no demuestra que la integración con el agente esté terminada ni que todos los motores o sitios web estén siempre disponibles.
+- Los archivos de SearXNG están bajo `D:\\AgenteIA\\searxng`. El archivo original `D:\\AgenteIA\\ciclo_agente_persistente.py` no se ha modificado durante estos pasos.
+
+### Pendientes y seguridad
+1. Cambiar el valor provisional de `server.secret_key` de `core-config/settings.yml` por un secreto aleatorio local antes de un uso prolongado.
+2. Revisar los registros de SearXNG si alguna búsqueda falla; los motores públicos pueden aplicar límites, bloquear consultas o cambiar.
+3. Conectar la búsqueda a una copia de trabajo del agente y probar la consulta, lectura de páginas y trazabilidad de URLs.
+4. No tratar los extractos de búsqueda como prueba suficiente por sí solos: el agente debe distinguir resultados de búsqueda de páginas realmente leídas y no inventar afirmaciones.
+5. Mantener el puerto enlazado a `127.0.0.1`; no exponer el servicio a Internet sin configurar controles de seguridad apropiados.
+

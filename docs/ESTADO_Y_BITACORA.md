@@ -186,6 +186,15 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Conclusión: las operaciones básicas de lectura/escritura y la comprobación de rutas funcionan en la prueba. Esta validación no constituye un aislamiento fuerte frente a enlaces simbólicos o condiciones de carrera; no se debe tratar como una frontera de seguridad suficiente para ejecutar código no confiable.
 - Próximo paso: conectar el modelo con un conjunto cerrado de herramientas mediante llamadas estructuradas, validar rigurosamente cada argumento y pedir confirmación antes de sobrescribir archivos existentes.
 
+
+
+### 2026-10-24 — confirmación de archivo escrito por la herramienta
+
+- Se leyó desde PowerShell `D:\\AgenteIA\\sandbox\\resultado_agente.txt`.
+- Contenido confirmado: `La herramienta de archivos funciona correctamente.`
+- Conclusión: la escritura de la herramienta dejó un archivo persistente y su contenido puede verificarse fuera del propio script.
+- Próximo paso: diseñar el primer ciclo de herramienta del agente con un conjunto cerrado de acciones, validación estricta y confirmación antes de modificar archivos existentes.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

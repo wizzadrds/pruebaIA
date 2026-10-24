@@ -72,6 +72,13 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 3. Interpretación: el modelo está cargado y reparte el procesamiento entre CPU y GPU. El contexto actual es de 4096 tokens. Esta salida no mide por sí sola la velocidad ni confirma la capacidad de ejecutar tareas autónomas.
 4. Decisión: mantener 7B de momento y no cambiar de modelo sin una prueba que lo justifique.
 
+
+
+### 2026-10-24 — comprobación de Git y Blender
+
+1. `git --version` devuelve `git version 2.55.0.windows.5`: Git está instalado y accesible desde PowerShell.
+2. `blender --version` devuelve `CommandNotFoundException`: el comando Blender no está disponible en el PATH de esta sesión. Esto no confirma por sí solo que Blender no esté instalado; falta comprobar las ubicaciones habituales y las aplicaciones instaladas.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.
@@ -104,8 +111,8 @@ Copiar la salida. Después comprobaremos Git y Blender antes de instalar un agen
 - [ ] Medir consumo de RAM/VRAM y velocidad durante una tarea real.
 - [ ] Registrar uso aproximado de RAM/VRAM y velocidad.
 - [ ] Inventariar el hardware y sistema del portátil.
-- [ ] Comprobar si Git está instalado.
-- [ ] Comprobar si Blender está instalado.
+- [x] Comprobar Git: instalado y accesible desde PowerShell.
+- [ ] Comprobar si Blender está instalado o si solo falta añadirlo al PATH.
 - [ ] Verificar requisitos y compatibilidad local de OpenHands.
 - [ ] Definir cómo el panel solicitará tareas al backend de IA.
 - [ ] Añadir controles de acceso, límites y registros antes de permitir operaciones reales desde el portátil.

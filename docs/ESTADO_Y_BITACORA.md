@@ -337,3 +337,16 @@ En cada sesión de trabajo:
 - Esto confirma que el archivo creado en el segundo paso persiste en disco. La salida también confirma que el supuesto resumen fue una copia literal, no una síntesis.
 - Próxima mejora: ajustar el prompt del modelo para diferenciar explícitamente resumir de copiar, solicitando una síntesis breve que conserve las ideas esenciales.
 
+
+
+## Ciclo de resumen determinista: primera prueba completada
+
+- Fecha: 2026-10-24.
+- Se añadió al repositorio `ciclo_agente_corregido.py` para separar el flujo de resumen del ciclo general de acciones del modelo. Commit: `438d9e5d6832c52a5462195f6d30ae99be841aff`.
+- El usuario copió esta versión al equipo y ejecutó la tarea: `Lee prueba.txt, resume sus ideas principales en una frase y guarda el resultado en resumen_final.txt.`
+- Lectura: el usuario autorizó la lectura de `prueba.txt`; el programa mostró el contenido real.
+- Resumen propuesto: `El archivo prueba.txt es una guía para las primeras pruebas del agente, indicando que debe trabajar dentro de esta carpeta.`
+- Escritura: el usuario autorizó crear `resumen_final.txt`; el programa informó que lo creó y verificó que el contenido guardado coincidiera con el resumen aprobado.
+- Estado: ciclo de lectura → generación de resumen → autorización → escritura exclusiva → verificación completado con éxito en esta prueba.
+- Límites conocidos: todavía depende de un modelo local para redactar el resumen; la prueba no demuestra autonomía prolongada ni aislamiento robusto. La ruta y las acciones siguen restringidas por el programa y las escrituras requieren autorización humana.
+- Próximo paso recomendado: hacer una prueba negativa segura creando previamente un archivo de salida con el mismo nombre y confirmar que el programa se niega a sobrescribirlo; después integrar registro de progreso y un modo de detener/pausar el agente.

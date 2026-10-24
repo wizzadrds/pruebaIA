@@ -159,6 +159,15 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Conclusión: el cliente Python puede comunicarse con el modelo y conservar un registro de actividad. Aún no se han añadido ejecución de herramientas, ciclo autónomo ni recuperación automática de errores.
 - Próximo paso: verificar que el registro JSONL se puede leer correctamente y luego diseñar una primera herramienta segura y limitada.
 
+
+
+### 2026-10-24 — validación del registro JSONL
+
+- Se leyó `D:\\AgenteIA\\registro.jsonl` desde PowerShell, convirtiendo la línea JSON con `ConvertFrom-Json`.
+- Se verificaron los campos `fecha`, `modelo`, `instruccion` y `respuesta`; los valores corresponden a la prueba del cliente Python.
+- Conclusión: el registro de ejecución es legible y conserva la información de la petición/respuesta. El cliente se ejecutó otra vez durante esta comprobación, por lo que puede haber más de una entrada en el archivo.
+- Próximo paso: añadir una herramienta de prueba con alcance limitado (crear/leer un archivo dentro de `D:\\AgenteIA\\sandbox`), sin ejecutar comandos arbitrarios del sistema.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

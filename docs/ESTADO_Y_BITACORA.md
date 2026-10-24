@@ -317,3 +317,15 @@ En cada sesión de trabajo:
 - Siguiente mejora propuesta: convertirlo en un ciclo multietapa con contexto de resultados anteriores, límite fijo de pasos y aprobación por cada acción de lectura/escritura. No se ha modificado el archivo local todavía.
 - Seguridad: no añadir ejecución de comandos del sistema; mantener la prohibición de sobrescritura y la sandbox. La comprobación de rutas actual no constituye aislamiento fuerte contra enlaces simbólicos o condiciones de carrera.
 
+
+## Primera ejecución multietapa completada
+
+- Fecha: 2026-10-24.
+- El usuario ejecutó la versión modificada de `D:\AgenteIA\ciclo_agente.py` con la tarea de leer `prueba.txt`, preparar un resumen breve y guardarlo como `resumen_prueba.txt`.
+- Paso 1: el modelo propuso `leer_archivo` para `prueba.txt`; el usuario autorizó y la herramienta devolvió el contenido real.
+- Paso 2: el modelo propuso `crear_archivo` para `resumen_prueba.txt`; el usuario autorizó y la herramienta confirmó su creación.
+- Paso 3: el modelo propuso `terminar` e informó que la tarea se había completado.
+- Resultado: el ciclo de varias acciones y el paso de resultados entre turnos funcionaron en esta prueba. El contenido creado fue una copia literal del original, no un resumen abreviado; la calidad semántica requiere mejoras y pruebas adicionales.
+- Límites: cada lectura/escritura requirió aprobación manual. No se ha demostrado autonomía prolongada, aislamiento de seguridad robusto ni capacidad general de programación autónoma.
+- Próxima verificación: leer `resumen_prueba.txt` desde PowerShell para confirmar el contenido persistente y después mejorar las instrucciones para que un resumen sea realmente conciso.
+

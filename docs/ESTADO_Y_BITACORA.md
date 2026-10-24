@@ -423,3 +423,12 @@ En cada sesión de trabajo:
 - Commit de la corrección: `42aacbee43c51c2c68deca064bfca13451f513ba`.
 - La corrección aún no está validada en la copia local. Antes de volver a ejecutar el lanzador, copiar la versión actual desde GitHub y comprobar sintaxis.
 - La prueba fallida no demuestra que el agente se ejecutara. Revisar la cola persistente con `listar` antes de otra prueba; no borrar tareas ni editar el JSON manualmente.
+
+
+## Diagnóstico Ollama y endurecimiento del ciclo del agente
+- La prueba directa a `http://localhost:11434/api/chat` con `format = "json"` devolvió un objeto JSON válido. Ollama y el modelo responden; el ciclo general no solicitaba el formato JSON estructurado.
+- Actualización de `ciclo_agente_persistente.py`: la petición incluye ahora `"format": "json"`.
+- Se endureció el caso `terminar`: si no hay acciones verificadas en el historial, la tarea se marca como fallida, no completada. Si sí hay acciones verificadas, se advierte que esto no prueba por sí solo que el objetivo semántico esté cumplido; requiere revisión humana.
+- Commit: `d84c9223d80814e342bbf5067a17456d2e77d0da`.
+- Pendiente: copiar el archivo actualizado al equipo local, compilarlo y probar solo con una tarea de bajo riesgo. No reintentar automáticamente las tareas fallidas ni alterar los registros históricos.
+- Limitación conocida: el historial de acciones verificadas no es un verificador general del objetivo. No afirmar autonomía fiable ni finalización correcta hasta añadir comprobaciones específicas por tipo de tarea.

@@ -1,0 +1,664 @@
+import json
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+from urllib.parse import quote_plus, urljoin, urlsplit
+import ipaddress
+import socket
+from html.parser import HTMLParser
+
+import requests
+
+BASE_DIR = Path(__file__).resolve().parent
+SANDBOX = (BASE_DIR / "sandbox").resolve()
+API_URL = "http://localhost:11434/api/chat"
+MODEL = "qwen2.5-coder:7b"
+LOG_FILE = BASE_DIR / "registro.jsonl"
+MAX_PASOS = 6
+MAX_TAREA_CARACTERES = 2000
+MAX_CONTENIDO_ARCHIVO = 20000
+MAX_CONTENIDO_CREAR = 10000
+MAX_RESPUESTA_MODELO = 12000
+MAX_RESUMEN_PANTALLA = 1200
+MAX_MENSAJE_FINAL = 1200
+TIMEOUT_SEGUNDOS = 180
+TIMEOUT_BUSQUEDA_SEGUNDOS = 20
+MAX_RESULTADOS_WEB = 5
+URL_SEARXNG = "http://127.0.0.1:8080/search"
+MAX_BYTES_PAGINA_WEB = 1_000_000
+MAX_CARACTERES_PAGINA_WEB = 20_000
+MAX_REDIRECCIONES_WEB = 5
+
+
+def _resumir_dato_registro(valor):
+    """Sustituye textos potencialmente sensibles por metadatos de longitud."""
+    if isinstance(valor, dict):
+        salida = {}
+        for clave, contenido in valor.items():
+            if clave in {"contenido", "texto"} and isinstance(contenido, str):
+                salida[clave] = f"[texto omitido; {len(contenido)} caracteres]"
+            elif clave == "resultado" and isinstance(contenido, str):
+                salida[clave] = f"[resultado textual omitido; {len(contenido)} caracteres]"
+            else:
+                salida[clave] = _resumir_dato_registro(contenido)
+        return salida
+    if isinstance(valor, list):
+        return [_resumir_dato_registro(elemento) for elemento in valor]
+    return valor
+
+
+def registrar(datos):
+    entrada = _resumir_dato_registro(dict(datos))
+    entrada["fecha"] = datetime.now().astimezone().isoformat()
+    with LOG_FILE.open("a", encoding="utf-8") as archivo:
+        archivo.write(json.dumps(entrada, ensure_ascii=False) + "\n")
+
+
+def resolver_ruta(nombre):
+    if not isinstance(nombre, str) or not nombre.strip():
+        raise ValueError("Nombre de archivo no válido.")
+    if nombre in {".", ".."} or Path(nombre).name != nombre:
+        raise ValueError("Solo se permiten nombres de archivo simples.")
+    if (any(c in nombre for c in '<>:"/\\|?*')
+            or nombre.endswith((" ", "."))
+            or any(ord(c) < 32 for c in nombre)):
+        raise ValueError("El nombre contiene caracteres no permitidos.")
+    base = nombre.split(".")[0].upper()
+    if re.fullmatch(r"(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])", base):
+        raise ValueError("Nombre reservado por Windows.")
+    # Comprueba la entrada sin resolver primero: resolve() sigue los enlaces
+    # simbólicos y podría ocultar que el nombre dentro de sandbox es un enlace.
+    ruta_entrada = SANDBOX / nombre
+    if ruta_entrada.is_symlink():
+        raise ValueError("No se permiten enlaces simbólicos dentro de la sandbox.")
+    ruta = ruta_entrada.resolve()
+    if not ruta.is_relative_to(SANDBOX) or ruta == SANDBOX:
+        raise ValueError("Ruta rechazada: fuera de la sandbox.")
+    return ruta
+
+
+def pedir_autorizacion(descripcion):
+    print("\n" + descripcion)
+    return input("¿Autorizas esta acción? Escribe SI: ").strip() == "SI"
+
+
+def leer_archivo(nombre):
+    ruta = resolver_ruta(nombre)
+    if ruta.is_symlink():
+        raise ValueError("No se permite leer enlaces simbólicos.")
+    if not ruta.is_file():
+        raise FileNotFoundError(f"No existe el archivo: {nombre}")
+    contenido = ruta.read_text(encoding="utf-8-sig")
+    if len(contenido) > MAX_CONTENIDO_ARCHIVO:
+        raise ValueError(
+            f"El archivo supera el límite de {MAX_CONTENIDO_ARCHIVO} caracteres; no se enviará al modelo."
+        )
+    return contenido
+
+
+def crear_archivo_nuevo(nombre, contenido):
+    if not isinstance(contenido, str) or not contenido.strip():
+        raise ValueError("El contenido debe ser texto no vacío.")
+    if len(contenido) > MAX_CONTENIDO_CREAR:
+        raise ValueError(
+            f"El contenido supera el límite de {MAX_CONTENIDO_CREAR} caracteres."
+        )
+    ruta = resolver_ruta(nombre)
+    if ruta.exists() or ruta.is_symlink():
+        raise FileExistsError(
+            f"Ya existe {nombre}; no se sobrescribirá. Elige otro nombre."
+        )
+    with ruta.open("x", encoding="utf-8") as archivo:
+        archivo.write(contenido)
+    if not ruta.is_file() or ruta.read_text(encoding="utf-8") != contenido:
+        raise IOError("No se pudo verificar el archivo creado.")
+    return ruta
+
+
+def llamar_modelo(prompt):
+    respuesta = requests.post(
+        API_URL,
+        json={
+            "model": MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+            "format": "json",
+        },
+        timeout=TIMEOUT_SEGUNDOS,
+    )
+    respuesta.raise_for_status()
+    datos = respuesta.json()
+    texto = datos.get("message", {}).get("content")
+    if not isinstance(texto, str) or not texto.strip():
+        raise ValueError("El modelo no devolvió texto.")
+    texto = texto.strip()
+    if len(texto) > MAX_RESPUESTA_MODELO:
+        raise ValueError(
+            f"La respuesta del modelo supera el límite de {MAX_RESPUESTA_MODELO} caracteres."
+        )
+    return texto
+
+
+class _ExtractorTextoHTML(HTMLParser):
+    IGNORAR = {"script", "style", "noscript", "svg", "template"}
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.partes = []
+        self.pila = []
+    def handle_starttag(self, tag, attrs):
+        if tag in self.IGNORAR:
+            self.pila.append(tag)
+    def handle_endtag(self, tag):
+        if tag in self.IGNORAR:
+            for i in range(len(self.pila) - 1, -1, -1):
+                if self.pila[i] == tag:
+                    del self.pila[i:]
+                    break
+    def handle_data(self, data):
+        if not self.pila:
+            texto = " ".join(data.split())
+            if texto:
+                self.partes.append(texto)
+
+
+def _validar_url_publica(url):
+    if not isinstance(url, str) or not url.strip() or len(url) > 2000:
+        raise ValueError("URL vacía o demasiado larga.")
+    partes = urlsplit(url.strip())
+    esquema = partes.scheme.lower()
+    if esquema not in {"http", "https"}:
+        raise ValueError("Solo se permiten URLs HTTP o HTTPS.")
+    if not partes.hostname or partes.username is not None or partes.password is not None:
+        raise ValueError("La URL debe tener host y no incluir credenciales.")
+    try:
+        puerto = partes.port
+    except ValueError as error:
+        raise ValueError("Puerto no válido.") from error
+    if puerto not in (None, 80, 443):
+        raise ValueError("Solo se permiten puertos 80 y 443.")
+    host = partes.hostname.rstrip(".").lower()
+    if host == "localhost" or host.endswith(".localhost") or host.endswith(".local"):
+        raise ValueError("Se rechazan nombres de host locales.")
+    try:
+        ips = [ipaddress.ip_address(host.strip("[]"))]
+    except ValueError:
+        try:
+            dns = socket.getaddrinfo(host, puerto or (443 if esquema == "https" else 80),
+                                     type=socket.SOCK_STREAM)
+        except socket.gaierror as error:
+            raise ValueError("No se pudo resolver el host.") from error
+        ips = [ipaddress.ip_address(d[4][0].split("%")[0]) for d in dns]
+    if not ips or any(not ip.is_global for ip in ips):
+        raise ValueError("Se rechaza el host porque alguna IP no es pública.")
+    return url.strip()
+
+
+def leer_pagina_web(url):
+    """Descarga HTML/texto público con límites y redirecciones validadas."""
+    url_actual = _validar_url_publica(url)
+    sesion = requests.Session()
+    sesion.trust_env = False
+    try:
+        for salto in range(MAX_REDIRECCIONES_WEB + 1):
+            _validar_url_publica(url_actual)
+            respuesta = sesion.get(url_actual,
+                headers={"User-Agent": "AgenteIA/1.0 (lector web local)",
+                         "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9"},
+                timeout=(5, 15), allow_redirects=False, stream=True)
+            try:
+                if respuesta.is_redirect or respuesta.is_permanent_redirect:
+                    destino = respuesta.headers.get("Location")
+                    if not destino:
+                        raise ValueError("Redirección sin destino.")
+                    if salto >= MAX_REDIRECCIONES_WEB:
+                        raise ValueError("Se superó el límite de redirecciones.")
+                    url_actual = urljoin(url_actual, destino)
+                    continue
+                respuesta.raise_for_status()
+                tipo = respuesta.headers.get("Content-Type", "").lower()
+                plano = tipo.startswith("text/plain")
+                if not (tipo.startswith("text/html") or "application/xhtml+xml" in tipo or plano):
+                    raise ValueError("La URL no devuelve HTML ni texto plano.")
+                longitud = respuesta.headers.get("Content-Length")
+                if longitud:
+                    try:
+                        declarado = int(longitud)
+                    except ValueError as error:
+                        raise ValueError("Content-Length no válido.") from error
+                    if declarado < 0 or declarado > MAX_BYTES_PAGINA_WEB:
+                        raise ValueError("La página supera el límite de descarga.")
+                bloques, total = [], 0
+                for bloque in respuesta.iter_content(chunk_size=16384):
+                    if not bloque:
+                        continue
+                    total += len(bloque)
+                    if total > MAX_BYTES_PAGINA_WEB:
+                        raise ValueError("La página supera el límite de descarga.")
+                    bloques.append(bloque)
+                documento = b"".join(bloques).decode(respuesta.encoding or "utf-8", errors="replace")
+            finally:
+                respuesta.close()
+            if plano:
+                texto = documento
+            else:
+                extractor = _ExtractorTextoHTML()
+                extractor.feed(documento)
+                extractor.close()
+                texto = "\n".join(extractor.partes)
+            texto = re.sub(r"\n{3,}", "\n\n", texto).strip()
+            if not texto:
+                raise ValueError("La página no contiene texto legible.")
+            return {"url": url_actual, "texto": texto[:MAX_CARACTERES_PAGINA_WEB]}
+        raise ValueError("No se pudo completar la lectura web.")
+    finally:
+        sesion.close()
+
+
+def buscar_web(consulta):
+    """Busca primero en SearXNG local y usa Wikipedia como alternativa."""
+    if not isinstance(consulta, str) or not consulta.strip() or len(consulta) > 500:
+        raise ValueError("La consulta web debe tener entre 1 y 500 caracteres.")
+    consulta = consulta.strip()
+    try:
+        respuesta = requests.get(URL_SEARXNG, params={"q": consulta, "format": "json"},
+            headers={"User-Agent": "AgenteIA/1.0 (asistente local)"},
+            timeout=TIMEOUT_BUSQUEDA_SEGUNDOS)
+        respuesta.raise_for_status()
+        salida = []
+        for item in respuesta.json().get("results", [])[:MAX_RESULTADOS_WEB]:
+            titulo = (item.get("title") or "").strip()
+            url = (item.get("url") or "").strip()
+            extracto = (item.get("content") or "").strip()
+            if titulo and url.startswith(("http://", "https://")):
+                salida.append({"titulo": titulo[:300], "url": url[:2000],
+                    "extracto": re.sub(r"<[^>]+>", "", extracto)[:1200]})
+        if salida:
+            return salida
+    except (requests.RequestException, ValueError, TypeError) as error:
+        print(f"SearXNG no disponible; se intentará Wikipedia: {error}", file=sys.stderr)
+
+    respuesta = requests.get(
+        url,
+        headers={"User-Agent": "Mozilla/5.0 (compatible; AgenteIA/1.0)"},
+        timeout=TIMEOUT_BUSQUEDA_SEGUNDOS,
+    )
+    respuesta.raise_for_status()
+    from html.parser import HTMLParser
+    class Parser(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.items, self.item, self.campo = [], None, None
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            clases = attrs.get("class", "").split()
+            if tag == "a" and "result__a" in clases and attrs.get("href"):
+                self.item = {"titulo": "", "url": attrs["href"], "extracto": ""}
+                self.campo = "titulo"
+            elif self.item is not None and "result__snippet" in clases:
+                self.campo = "extracto"
+        def handle_data(self, data):
+            if self.item is not None and self.campo in {"titulo", "extracto"}:
+                self.item[self.campo] += data
+        def handle_endtag(self, tag):
+            if self.item is not None and tag == "a" and self.campo == "titulo":
+                self.items.append(self.item)
+                self.item, self.campo = None, None
+    parser = Parser()
+    parser.feed(respuesta.text)
+    salida, vistos = [], set()
+    for item in parser.items:
+        enlace = item["url"].strip()
+        titulo = " ".join(item["titulo"].split())
+        extracto = " ".join(item["extracto"].split())
+        if not enlace.startswith(("https://", "http://")) or not titulo or enlace in vistos:
+            continue
+        vistos.add(enlace)
+        salida.append({"titulo": titulo[:300], "url": enlace[:2000], "extracto": extracto[:1200]})
+        if len(salida) >= MAX_RESULTADOS_WEB:
+            break
+    if not salida:
+        raise ValueError("La búsqueda web no devolvió resultados utilizables.")
+    return salida
+
+
+def generar_resumen(tarea, nombre_origen, contenido):
+    prompt = f"""
+Resume el texto siguiente en una sola frase en español.
+Tarea del usuario: {tarea}
+Nombre del archivo de origen: {nombre_origen}
+
+CONTENIDO REAL LEÍDO:
+--- INICIO ---
+{contenido}
+--- FIN ---
+
+Requisitos:
+- Devuelve solo una frase de resumen.
+- Expresa el propósito e instrucciones principales del texto.
+- Usa tus propias palabras, no copies el texto completo.
+- No digas que el archivo contiene un resumen.
+- No inventes información.
+"""
+    resumen = llamar_modelo(prompt)
+    resumen = resumen.strip().strip('"').strip()
+    if not resumen:
+        raise ValueError("El resumen está vacío.")
+    if len(resumen) > 1200:
+        raise ValueError("El resumen es demasiado largo; no se guardará.")
+    return resumen
+
+
+def ejecutar_tarea_resumen(tarea):
+    # Se esperan nombres .txt explícitos en la tarea: primero origen, último destino.
+    nombres = re.findall(r"(?<![\\w.-])([A-Za-z0-9_-]+\.txt)\b", tarea,
+                         flags=re.IGNORECASE)
+    if len(nombres) < 2:
+        print("Para esta modalidad indica el archivo de origen y el de salida,")
+        print("por ejemplo: Lee prueba.txt, resume sus ideas y guarda el resultado en resumen_final.txt.")
+        return "fallida"
+
+    nombre_origen = nombres[0]
+    nombre_salida = nombres[-1]
+    resolver_ruta(nombre_origen)
+    resolver_ruta(nombre_salida)
+
+    if nombre_origen.casefold() == nombre_salida.casefold():
+        raise ValueError("El archivo de salida no puede ser el archivo de origen.")
+
+    # Comprobación temprana: no pedir permisos ni llamar al modelo si el destino ya existe.
+    ruta_salida = resolver_ruta(nombre_salida)
+    if ruta_salida.exists() or ruta_salida.is_symlink():
+        raise FileExistsError(
+            f"Ya existe {nombre_salida}; no se sobrescribirá. Elige otro nombre."
+        )
+
+    if not pedir_autorizacion(f"Voy a leer el archivo {nombre_origen}."):
+        print("Lectura cancelada.")
+        return "cancelada"
+    contenido = leer_archivo(nombre_origen)
+    registrar({
+        "tarea": tarea, "accion": "leer_archivo", "nombre": nombre_origen,
+        "resultado": contenido, "estado": "completada",
+    })
+    print("\nContenido leído:")
+    print(contenido)
+
+    print("\nGenerando resumen a partir del contenido real leído...")
+    resumen = generar_resumen(tarea, nombre_origen, contenido)
+    print("\nResumen propuesto:")
+    print(resumen)
+
+    if not pedir_autorizacion(
+        f"Voy a crear {nombre_salida} con el resumen mostrado arriba."
+    ):
+        print("Creación cancelada. No se ha escrito ningún archivo.")
+        registrar({
+            "tarea": tarea, "accion": "crear_archivo",
+            "nombre": nombre_salida, "estado": "cancelada",
+        })
+        return "cancelada"
+
+    ruta = crear_archivo_nuevo(nombre_salida, resumen + "\n")
+    contenido_verificado = ruta.read_text(encoding="utf-8")
+    if contenido_verificado.strip() != resumen:
+        raise IOError("El contenido guardado no coincide con el resumen aprobado.")
+
+    print(f"\nCorrecto: se creó y verificó {ruta.name}.")
+    print("Contenido guardado:")
+    print(contenido_verificado)
+    registrar({
+        "tarea": tarea, "accion": "crear_archivo", "nombre": nombre_salida,
+        "resultado": contenido_verificado, "estado": "creado_y_verificado",
+    })
+    return "completada"
+
+
+def consultar_modelo(tarea, historial, paso):
+    prompt = f"""
+Eres un agente con herramientas limitadas. Paso {paso}/{MAX_PASOS}.
+Devuelve exclusivamente un objeto JSON válido.
+Estilo: sé directo, natural y conciso. No inventes; si no sabes, dilo. Da opiniones claras cuando se pidan y distingue hechos de opiniones. Sin preámbulos ni frases de relleno.
+Acciones permitidas:
+{{"accion":"leer_archivo","nombre":"prueba.txt"}}
+{{"accion":"crear_archivo","nombre":"resultado.txt","contenido":"texto"}}
+{{"accion":"buscar_web","consulta":"consulta concreta"}}
+{{"accion":"leer_pagina_web","url":"https://example.org/"}}
+{{"accion":"mostrar_resumen","texto":"1. Primer punto.\n2. Segundo punto.\n3. Tercer punto."}}
+{{"accion":"terminar","mensaje":"explicación final"}}
+Usa el historial real. No repitas lecturas correctas. No sobrescribas archivos.
+No inventes resultados ni afirmes que una acción se completó sin confirmación.
+Si la tarea pide resumir y guardar, usa el contenido leído y crea el archivo solicitado.
+Si la tarea pide crear un archivo y ya has creado y verificado el archivo solicitado, devuelve terminar con un mensaje breve; no propongas mostrar_resumen salvo que el usuario pida explícitamente mostrar un resumen por pantalla.
+Si pide resumir para mostrar por pantalla sin modificar archivos, usa una lectura verificada del historial y devuelve mostrar_resumen con exactamente tres puntos numerados en texto. Esta acción solo imprime en pantalla; no lee ni escribe archivos.
+TAREA: {tarea}
+HISTORIAL REAL: {json.dumps(historial, ensure_ascii=False)}
+"""
+    texto = llamar_modelo(prompt)
+    try:
+        accion = json.loads(texto)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"El modelo no devolvió JSON válido: {error}") from error
+    if not isinstance(accion, dict):
+        raise ValueError("La respuesta del modelo debe ser un objeto JSON.")
+    return accion
+
+
+def validar_accion(accion):
+    if not isinstance(accion, dict):
+        raise ValueError("La acción debe ser un objeto JSON.")
+    tipo = accion.get("accion")
+    esquemas = {
+        "leer_archivo": {"accion", "nombre"},
+        "crear_archivo": {"accion", "nombre", "contenido"},
+        "mostrar_resumen": {"accion", "texto"},
+        "buscar_web": {"accion", "consulta"},
+        "leer_pagina_web": {"accion", "url"},
+        "terminar": {"accion", "mensaje"},
+    }
+    if tipo not in esquemas or set(accion) != esquemas[tipo]:
+        raise ValueError("Acción no permitida o campos incorrectos.")
+    if tipo in {"leer_archivo", "crear_archivo"}:
+        resolver_ruta(accion["nombre"])
+    if tipo == "crear_archivo" and (
+        not isinstance(accion["contenido"], str) or not accion["contenido"].strip()
+    ):
+        raise ValueError("El contenido debe ser texto no vacío.")
+    if tipo == "leer_pagina_web":
+        if not isinstance(accion["url"], str) or not accion["url"].strip() or len(accion["url"]) > 2000:
+            raise ValueError("La URL debe ser texto no vacío de hasta 2000 caracteres.")
+    if tipo == "buscar_web":
+        consulta = accion["consulta"]
+        if not isinstance(consulta, str) or not consulta.strip() or len(consulta) > 500:
+            raise ValueError("La consulta web debe tener entre 1 y 500 caracteres.")
+    if tipo == "mostrar_resumen":
+        texto = accion["texto"]
+        if not isinstance(texto, str) or not texto.strip():
+            raise ValueError("El resumen debe ser texto no vacío.")
+        if len(texto) > MAX_RESUMEN_PANTALLA:
+            raise ValueError(
+                f"El resumen supera el límite de {MAX_RESUMEN_PANTALLA} caracteres."
+            )
+        puntos = [line for line in texto.splitlines()
+                  if re.match(r"^\s*[1-3][.)]\s+\S", line)]
+        numeros = [int(re.match(r"^\s*([1-3])[.)]\s+\S", line).group(1)) for line in puntos]
+        if numeros != [1, 2, 3]:
+            raise ValueError("El resumen debe contener exactamente los puntos 1, 2 y 3, en ese orden.")
+    if tipo == "terminar":
+        if not isinstance(accion["mensaje"], str):
+            raise ValueError("El mensaje final debe ser texto.")
+        if len(accion["mensaje"]) > MAX_MENSAJE_FINAL:
+            raise ValueError(
+                f"El mensaje final supera el límite de {MAX_MENSAJE_FINAL} caracteres."
+            )
+    return tipo
+
+
+def ejecutar_ciclo_general(tarea):
+    historial = []
+    lecturas = set()
+    for paso in range(1, MAX_PASOS + 1):
+        print(f"\n===== PASO {paso}/{MAX_PASOS} =====")
+        accion = consultar_modelo(tarea, historial, paso)
+
+        # Ignorar resúmenes no solicitados antes de validar su formato.
+        # Así, una propuesta irrelevante o mal formada no convierte una acción
+        # ya realizada correctamente en una tarea fallida.
+        if isinstance(accion, dict) and accion.get("accion") == "mostrar_resumen":
+            pide_resumen_pantalla = any(
+                palabra in tarea.casefold()
+                for palabra in ("resumen", "resume", "resumir", "mostrar por pantalla", "muestra por pantalla")
+            )
+            if not pide_resumen_pantalla:
+                motivo = "Resumen bloqueado: la tarea no solicita un resumen para mostrar por pantalla."
+                print(motivo)
+                historial.append({
+                    "paso": paso, "accion": accion,
+                    "resultado": motivo, "estado": "bloqueada",
+                })
+                registrar({
+                    "tarea": tarea, "paso": paso, "accion": accion,
+                    "resultado": motivo, "estado": "accion_no_corresponde",
+                })
+                continue
+
+        tipo = validar_accion(accion)
+
+        if tipo == "leer_archivo" and accion["nombre"].casefold() in lecturas:
+            print("Lectura repetida bloqueada; se usará el contenido anterior.")
+            historial.append({
+                "paso": paso, "accion": accion,
+                "resultado": "Lectura repetida bloqueada.", "estado": "bloqueada",
+            })
+            continue
+
+        if tipo == "mostrar_resumen":
+            hay_lectura_verificada = any(
+                isinstance(item.get("accion"), dict)
+                and item["accion"].get("accion") in {"leer_archivo", "leer_pagina_web"}
+                and isinstance(item.get("resultado"), str)
+                and item.get("resultado").strip()
+                and item.get("estado") != "bloqueada"
+                for item in historial
+            )
+            if not hay_lectura_verificada or not any(
+                palabra in tarea.casefold()
+                for palabra in ("resumen", "resume", "resumir", "mostrar por pantalla", "muestra por pantalla")
+            ):
+                motivo = (
+                    "Resumen bloqueado: no hay una lectura verificada en el historial."
+                    if not hay_lectura_verificada
+                    else "Resumen bloqueado: la tarea no solicita un resumen para mostrar por pantalla."
+                )
+                print(motivo)
+                historial.append({
+                    "paso": paso, "accion": accion,
+                    "resultado": motivo, "estado": "bloqueada",
+                })
+                registrar({
+                    "tarea": tarea, "paso": paso, "accion": accion,
+                    "resultado": motivo, "estado": "accion_no_corresponde",
+                })
+                continue
+            print("\nResumen basado en el contenido leído:")
+            print(accion["texto"])
+            registrar({
+                "tarea": tarea, "paso": paso, "accion": accion,
+                "resultado": accion["texto"], "estado": "mostrado_en_pantalla",
+            })
+            return "completada"
+
+        print("\nAcción propuesta:")
+        print(json.dumps(accion, ensure_ascii=False, indent=2))
+        if tipo == "terminar":
+            print("\nEl agente propone terminar:")
+            print(accion["mensaje"])
+            # Una declaración del modelo no demuestra que la tarea esté cumplida.
+            if not historial:
+                print("No hay acciones verificadas que demuestren progreso; la tarea no se marcará como completada.")
+                registrar({
+                    "tarea": tarea, "paso": paso, "accion": accion,
+                    "estado": "terminacion_sin_progreso_verificado",
+                })
+                return "fallida"
+            registrar({
+                "tarea": tarea, "paso": paso, "accion": accion,
+                "estado": "terminado_con_acciones_verificadas",
+            })
+            print("Aviso: el historial contiene acciones verificadas, pero la finalización semántica aún requiere revisión humana.")
+            return "completada"
+
+        if not pedir_autorizacion("¿Autorizas la acción mostrada?"):
+            print("Acción cancelada; ciclo detenido.")
+            registrar({"tarea": tarea, "paso": paso, "accion": accion,
+                       "estado": "cancelada"})
+            return "cancelada"
+
+        if tipo == "leer_archivo":
+            resultado = leer_archivo(accion["nombre"])
+            lecturas.add(accion["nombre"].casefold())
+        elif tipo == "crear_archivo":
+            ruta = crear_archivo_nuevo(accion["nombre"], accion["contenido"])
+            resultado = f"Archivo creado y verificado: {ruta.name}"
+        elif tipo == "leer_pagina_web":
+            lectura = leer_pagina_web(accion["url"])
+            resultado = "URL leída: " + lectura["url"] + "\nContenido leído:\n" + lectura["texto"]
+        else:
+            resultados = buscar_web(accion["consulta"])
+            resultado = "\\n".join(f"{i}. {x['titulo']}\\nURL: {x['url']}\\nExtracto: {x['extracto'] or '(sin extracto)'}" for i, x in enumerate(resultados, 1))
+            print("\\nResultados web:")
+            print(resultado)
+
+        print("\nResultado real:")
+        print(resultado)
+        historial.append({
+            "paso": paso, "accion": accion, "resultado": resultado,
+        })
+        registrar({
+            "tarea": tarea, "paso": paso, "accion": accion,
+            "resultado": resultado, "estado": "completada",
+        })
+    print("\nSe alcanzó el límite de pasos.")
+    registrar({"tarea": tarea, "estado": "limite_alcanzado",
+               "max_pasos": MAX_PASOS})
+    return "fallida"
+
+
+def main():
+    if not SANDBOX.is_dir():
+        print(f"No existe la carpeta sandbox: {SANDBOX}")
+        print("ESTADO_TAREA: fallida")
+        return 2
+    tarea = " ".join(sys.argv[1:]).strip() if len(sys.argv) > 1 else input(
+        "¿Qué quieres que haga el agente en la sandbox? "
+    ).strip()
+    if not tarea:
+        print("No se ha indicado ninguna tarea.")
+        print("ESTADO_TAREA: fallida")
+        return 2
+    if len(tarea) > MAX_TAREA_CARACTERES:
+        print(f"La tarea supera el límite de {MAX_TAREA_CARACTERES} caracteres.")
+        print("ESTADO_TAREA: fallida")
+        return 2
+
+    normalizada = tarea.casefold()
+    es_resumen_y_guardado = (
+        any(palabra in normalizada for palabra in ("resume", "resumen"))
+        and any(palabra in normalizada for palabra in ("guarda", "guardar", "guarde"))
+    )
+    try:
+        estado = ejecutar_tarea_resumen(tarea) if es_resumen_y_guardado else ejecutar_ciclo_general(tarea)
+        if estado not in {"completada", "cancelada", "fallida"}:
+            estado = "fallida"
+        print(f"ESTADO_TAREA: {estado}")
+        return 0 if estado == "completada" else (3 if estado == "cancelada" else 2)
+    except (requests.RequestException, ValueError, OSError) as error:
+        mensaje = f"{type(error).__name__}: {error}"
+        print(f"\\nTarea no completada: {mensaje}")
+        registrar({"tarea": tarea, "estado": "error", "error": mensaje})
+        print("ESTADO_TAREA: fallida")
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

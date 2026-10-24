@@ -227,7 +227,7 @@ def validar_accion(accion):
         if not isinstance(texto, str) or not texto.strip():
             raise ValueError("El resumen debe ser texto no vacío.")
         puntos = [line for line in texto.splitlines()
-                  if re.match(r"^\\s*[1-3][.)]\\s+\\S", line)]
+                  if re.match(r"^\s*[1-3][.)]\s+\S", line)]
         if len(puntos) != 3:
             raise ValueError("El resumen debe contener exactamente tres puntos numerados.")
     if tipo == "terminar" and not isinstance(accion["mensaje"], str):

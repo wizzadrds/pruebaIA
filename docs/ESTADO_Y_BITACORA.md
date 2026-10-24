@@ -121,6 +121,16 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Resultado: `ollama version is 0.40.10`.
 - Conclusión: CLI de Ollama está instalado y responde. Aún falta verificar que el servicio HTTP local esté activo y que la API responda antes de integrarla con el agente.
 
+
+
+### 2026-10-24 — API local de Ollama verificada
+
+- Se ejecutó `Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -Method Get` desde PowerShell.
+- La petición HTTP respondió y devolvió la lista de modelos; aparece `qwen2.5-coder:7b`.
+- Conclusión: la API HTTP local de Ollama está accesible desde el equipo. Esto permite que un programa cliente se comunique con el modelo sin depender de la interfaz interactiva de la terminal.
+- Seguridad: mantener la API en el equipo local; no exponer el puerto 11434 a Internet ni abrirlo en el router.
+- Siguiente paso: hacer una petición pequeña a `/api/chat` y verificar una respuesta generada por la API.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

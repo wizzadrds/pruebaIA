@@ -329,3 +329,11 @@ En cada sesión de trabajo:
 - Límites: cada lectura/escritura requirió aprobación manual. No se ha demostrado autonomía prolongada, aislamiento de seguridad robusto ni capacidad general de programación autónoma.
 - Próxima verificación: leer `resumen_prueba.txt` desde PowerShell para confirmar el contenido persistente y después mejorar las instrucciones para que un resumen sea realmente conciso.
 
+
+## Verificación en disco del resultado multietapa
+
+- Fecha: 2026-10-24.
+- El usuario leyó `D:\AgenteIA\sandbox\resumen_prueba.txt` mediante `Get-Content` y confirmó que contiene el texto original completo.
+- Esto confirma que el archivo creado en el segundo paso persiste en disco. La salida también confirma que el supuesto resumen fue una copia literal, no una síntesis.
+- Próxima mejora: ajustar el prompt del modelo para diferenciar explícitamente resumir de copiar, solicitando una síntesis breve que conserve las ideas esenciales.
+

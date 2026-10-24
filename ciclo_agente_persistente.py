@@ -301,7 +301,7 @@ def main():
         if estado not in {"completada", "cancelada", "fallida"}:
             estado = "fallida"
         print(f"ESTADO_TAREA: {estado}")
-        return 0 if estado in {"completada", "cancelada"} else 2
+        return 0 if estado == "completada" else (3 if estado == "cancelada" else 2)
     except (requests.RequestException, ValueError, OSError) as error:
         mensaje = f"{type(error).__name__}: {error}"
         print(f"\\nTarea no completada: {mensaje}")

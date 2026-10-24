@@ -119,7 +119,7 @@ def ejecutar_tarea_resumen(tarea):
     if len(nombres) < 2:
         print("Para esta modalidad indica el archivo de origen y el de salida,")
         print("por ejemplo: Lee prueba.txt, resume sus ideas y guarda el resultado en resumen_final.txt.")
-        return
+        return "fallida"
 
     nombre_origen = nombres[0]
     nombre_salida = nombres[-1]
@@ -138,7 +138,7 @@ def ejecutar_tarea_resumen(tarea):
 
     if not pedir_autorizacion(f"Voy a leer el archivo {nombre_origen}."):
         print("Lectura cancelada.")
-        return
+        return "cancelada"
     contenido = leer_archivo(nombre_origen)
     registrar({
         "tarea": tarea, "accion": "leer_archivo", "nombre": nombre_origen,
@@ -160,7 +160,7 @@ def ejecutar_tarea_resumen(tarea):
             "tarea": tarea, "accion": "crear_archivo",
             "nombre": nombre_salida, "estado": "cancelada",
         })
-        return
+        return "cancelada"
 
     ruta = crear_archivo_nuevo(nombre_salida, resumen + "\n")
     contenido_verificado = ruta.read_text(encoding="utf-8")
@@ -174,6 +174,7 @@ def ejecutar_tarea_resumen(tarea):
         "tarea": tarea, "accion": "crear_archivo", "nombre": nombre_salida,
         "resultado": contenido_verificado, "estado": "creado_y_verificado",
     })
+    return "completada"
 
 
 def consultar_modelo(tarea, historial, paso):
@@ -247,13 +248,13 @@ def ejecutar_ciclo_general(tarea):
                 "tarea": tarea, "paso": paso, "accion": accion,
                 "estado": "terminado",
             })
-            return
+            return "completada"
 
         if not pedir_autorizacion("¿Autorizas la acción mostrada?"):
             print("Acción cancelada; ciclo detenido.")
             registrar({"tarea": tarea, "paso": paso, "accion": accion,
                        "estado": "cancelada"})
-            return
+            return "cancelada"
 
         if tipo == "leer_archivo":
             resultado = leer_archivo(accion["nombre"])
@@ -274,32 +275,40 @@ def ejecutar_ciclo_general(tarea):
     print("\nSe alcanzó el límite de pasos.")
     registrar({"tarea": tarea, "estado": "limite_alcanzado",
                "max_pasos": MAX_PASOS})
+    return "fallida"
 
 
 def main():
     if not SANDBOX.is_dir():
-        raise FileNotFoundError(f"No existe la carpeta sandbox: {SANDBOX}")
-    tarea = " ".join(sys.argv[1:]).strip() if len(sys.argv) > 1 else input("¿Qué quieres que haga el agente en la sandbox? ").strip()
+        print(f"No existe la carpeta sandbox: {SANDBOX}")
+        print("ESTADO_TAREA: fallida")
+        return 2
+    tarea = " ".join(sys.argv[1:]).strip() if len(sys.argv) > 1 else input(
+        "¿Qué quieres que haga el agente en la sandbox? "
+    ).strip()
     if not tarea:
         print("No se ha indicado ninguna tarea.")
-        return
+        print("ESTADO_TAREA: fallida")
+        return 2
 
     normalizada = tarea.casefold()
     es_resumen_y_guardado = (
-        any(palabra in normalizada for palabra in ("resume", "resumen", "resume"))
+        any(palabra in normalizada for palabra in ("resume", "resumen"))
         and any(palabra in normalizada for palabra in ("guarda", "guardar", "guarde"))
     )
-
     try:
-        if es_resumen_y_guardado:
-            ejecutar_tarea_resumen(tarea)
-        else:
-            ejecutar_ciclo_general(tarea)
+        estado = ejecutar_tarea_resumen(tarea) if es_resumen_y_guardado else ejecutar_ciclo_general(tarea)
+        if estado not in {"completada", "cancelada", "fallida"}:
+            estado = "fallida"
+        print(f"ESTADO_TAREA: {estado}")
+        return 0 if estado in {"completada", "cancelada"} else 2
     except (requests.RequestException, ValueError, OSError) as error:
         mensaje = f"{type(error).__name__}: {error}"
-        print(f"\nTarea no completada: {mensaje}")
+        print(f"\\nTarea no completada: {mensaje}")
         registrar({"tarea": tarea, "estado": "error", "error": mensaje})
+        print("ESTADO_TAREA: fallida")
+        return 2
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

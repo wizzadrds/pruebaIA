@@ -308,3 +308,12 @@ En cada sesión de trabajo:
 - Resultado: se devolvió el contenido esperado del archivo.
 - Estado: lectura repetida confirmada. La versión actual ejecuta una acción por ejecución; el próximo objetivo técnico es un ciclo multietapa con aprobación por acción, sin comandos arbitrarios.
 
+
+## Revisión del ciclo actual y siguiente cambio previsto
+
+- Fecha: 2026-10-24.
+- Se revisó el contenido actual de `D:\AgenteIA\ciclo_agente.py` compartido por el usuario.
+- Confirmado: actualmente consulta el modelo una vez, ejecuta como máximo una acción permitida por ejecución, solicita `SI`, registra el resultado en JSONL y ofrece leer/crear archivos o terminar.
+- Siguiente mejora propuesta: convertirlo en un ciclo multietapa con contexto de resultados anteriores, límite fijo de pasos y aprobación por cada acción de lectura/escritura. No se ha modificado el archivo local todavía.
+- Seguridad: no añadir ejecución de comandos del sistema; mantener la prohibición de sobrescritura y la sandbox. La comprobación de rutas actual no constituye aislamiento fuerte contra enlaces simbólicos o condiciones de carrera.
+

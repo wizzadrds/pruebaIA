@@ -365,3 +365,12 @@ En cada sesión de trabajo:
 - Prueba con destino existente: el agente devolvió `FileExistsError` antes de solicitar autorización de lectura; no llamó al modelo y no sobrescribió `resumen_final.txt`.
 - Resultado: correcto.
 - Próximo objetivo: diseñar persistencia local de tareas y recuperación explícita tras reinicio, manteniendo autorización humana y sin reanudar acciones de escritura automáticamente.
+
+
+## 2026-10-24 — Primera versión de memoria persistente
+- Añadido `tareas_persistentes.py`: cola JSON local para registrar, listar, consultar y cambiar estado de tareas.
+- Estados admitidos: pendiente, en_curso, completada, fallida e interrumpida.
+- `recuperar` cambia tareas en curso a interrumpidas y muestra las que requieren revisión.
+- Importante: esta herramienta no ejecuta tareas ni reanuda acciones; está separada del agente principal para probar la persistencia con seguridad.
+- Archivo: https://github.com/wizzadrds/pruebaIA/blob/main/tareas_persistentes.py
+- Pendiente: descargar al equipo, crear una tarea de prueba, cerrar y reabrir PowerShell, y comprobar que la tarea sigue guardada.

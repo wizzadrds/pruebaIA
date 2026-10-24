@@ -195,6 +195,21 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Conclusión: la escritura de la herramienta dejó un archivo persistente y su contenido puede verificarse fuera del propio script.
 - Próximo paso: diseñar el primer ciclo de herramienta del agente con un conjunto cerrado de acciones, validación estricta y confirmación antes de modificar archivos existentes.
 
+
+
+### 2026-10-24 — inventario de archivos de trabajo local
+
+El listado de PowerShell confirmó que en `D:\\AgenteIA` existen:
+
+- `agente.py` (1.472 bytes)
+- `herramientas.py` (1.347 bytes)
+- `prueba.blend` (94.614 bytes)
+- `prueba_blender.py` (322 bytes)
+- `registro.jsonl` (193 bytes)
+- carpeta `sandbox`
+
+Conclusión: los componentes iniciales están separados y podemos crear un nuevo archivo para el ciclo de herramientas sin reemplazar `agente.py` ni `herramientas.py`. Antes de conectar el modelo, se implementará un archivo nuevo con acciones limitadas y registro de cada operación.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

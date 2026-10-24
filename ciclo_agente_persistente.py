@@ -190,6 +190,7 @@ Acciones permitidas:
 Usa el historial real. No repitas lecturas correctas. No sobrescribas archivos.
 No inventes resultados ni afirmes que una acción se completó sin confirmación.
 Si la tarea pide resumir y guardar, usa el contenido leído y crea el archivo solicitado.
+Si la tarea pide crear un archivo y ya has creado y verificado el archivo solicitado, devuelve terminar con un mensaje breve; no propongas mostrar_resumen salvo que el usuario pida explícitamente mostrar un resumen por pantalla.
 Si pide resumir para mostrar por pantalla sin modificar archivos, usa una lectura verificada del historial y devuelve mostrar_resumen con exactamente tres puntos numerados en texto. Esta acción solo imprime en pantalla; no lee ni escribe archivos.
 TAREA: {tarea}
 HISTORIAL REAL: {json.dumps(historial, ensure_ascii=False)}
@@ -241,6 +242,28 @@ def ejecutar_ciclo_general(tarea):
     for paso in range(1, MAX_PASOS + 1):
         print(f"\n===== PASO {paso}/{MAX_PASOS} =====")
         accion = consultar_modelo(tarea, historial, paso)
+
+        # Ignorar resúmenes no solicitados antes de validar su formato.
+        # Así, una propuesta irrelevante o mal formada no convierte una acción
+        # ya realizada correctamente en una tarea fallida.
+        if isinstance(accion, dict) and accion.get("accion") == "mostrar_resumen":
+            pide_resumen_pantalla = any(
+                palabra in tarea.casefold()
+                for palabra in ("resumen", "resume", "resumir", "mostrar por pantalla", "muestra por pantalla")
+            )
+            if not pide_resumen_pantalla:
+                motivo = "Resumen bloqueado: la tarea no solicita un resumen para mostrar por pantalla."
+                print(motivo)
+                historial.append({
+                    "paso": paso, "accion": accion,
+                    "resultado": motivo, "estado": "bloqueada",
+                })
+                registrar({
+                    "tarea": tarea, "paso": paso, "accion": accion,
+                    "resultado": motivo, "estado": "accion_no_corresponde",
+                })
+                continue
+
         tipo = validar_accion(accion)
 
         if tipo == "leer_archivo" and accion["nombre"].casefold() in lecturas:

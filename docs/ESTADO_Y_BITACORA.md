@@ -396,3 +396,13 @@ En cada sesión de trabajo:
 - `ver 5db8a428` confirmó que la nota de seguridad y la marca de tiempo quedaron persistidas en JSON.
 - Resultado: recuperación de estado verificada; no hubo ejecución automática.
 - Próximo paso: diseñar integración con el agente principal en modo conservador, con registro de eventos y aprobación explícita antes de acciones que escriban.
+
+
+## 2026-10-24 — Borrador de lanzador persistente guardado en GitHub
+- Se añadió `lanzador_persistente.py` en la raíz del repositorio para conservar el código y permitir futuras actualizaciones.
+- Commit del archivo: `7823ffdbd0dd2c9d3be6bb20b500939d471b46db`.
+- El usuario confirmó que `py -m py_compile "D:\\AgenteIA\\lanzador_persistente.py"` terminó sin errores.
+- Estado: borrador sintácticamente válido, NO probado funcionalmente.
+- Riesgo detectado antes de ejecutarlo: el borrador usa `subprocess.run(..., input=..., capture_output=True)` para iniciar el agente. Eso consume la entrada estándar y no permite responder de forma interactiva a las confirmaciones del agente; por tanto, no debe usarse todavía para tareas reales.
+- Próximo paso obligatorio: corregir el flujo interactivo y la clasificación de estados antes de ejecutar; conservar intactos `ciclo_agente.py`, `ciclo_agente_persistente.py` y `tareas_pendientes.json`.
+- Seguridad: la cola existente contiene la tarea de prueba `5db8a428` en estado `interrumpida`; no se ha reanudado ni modificado.

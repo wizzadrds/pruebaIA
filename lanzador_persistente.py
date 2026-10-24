@@ -13,6 +13,7 @@ def ejecutar_comando(*args):
         cwd=str(BASE_DIR),
         text=True,
         encoding="utf-8",
+        errors="replace",
         capture_output=True,
         check=False,
     )
@@ -29,14 +30,15 @@ def main():
         return 2
 
     creada = ejecutar_comando("nueva", tarea)
-    print(creada.stdout, end="")
+    salida_creacion = creada.stdout or ""
+    print(salida_creacion, end="")
     if creada.returncode != 0:
         print(creada.stderr)
         print("No se iniciará el agente.")
         return 2
 
     task_id = None
-    for linea in creada.stdout.splitlines():
+    for linea in salida_creacion.splitlines():
         if linea.startswith("Tarea guardada: "):
             task_id = linea.split(":", 1)[1].strip()
             break
@@ -45,7 +47,7 @@ def main():
         return 2
 
     estado = ejecutar_comando("estado", task_id, "en_curso")
-    print(estado.stdout, end="")
+    print(estado.stdout or "", end="")
     if estado.returncode != 0:
         print(estado.stderr)
         print("No se iniciará el agente.")
@@ -70,7 +72,7 @@ def main():
             nuevo_estado = "interrumpida"
 
         actualizacion = ejecutar_comando("estado", task_id, nuevo_estado)
-        print(actualizacion.stdout, end="")
+        print(actualizacion.stdout or "", end="")
         if actualizacion.returncode != 0:
             print(actualizacion.stderr)
             print("ATENCIÓN: no se pudo actualizar el estado persistente.")
@@ -83,7 +85,7 @@ def main():
     except KeyboardInterrupt:
         print("\nInterrupción detectada. Marcando la tarea como interrumpida.")
         actualizacion = ejecutar_comando("estado", task_id, "interrumpida")
-        print(actualizacion.stdout, end="")
+        print(actualizacion.stdout or "", end="")
         if actualizacion.returncode != 0:
             print(actualizacion.stderr)
         return 130

@@ -415,3 +415,11 @@ En cada sesión de trabajo:
 - Importante: el código remoto todavía debe sincronizarse con los archivos locales en `D:\\AgenteIA`; no ejecutar hasta copiar ambos archivos y pasar `py -m py_compile` a los dos.
 - Pruebas funcionales pendientes. No se afirma todavía que la clasificación de estados sea fiable ante un cierre forzado; la recuperación manual sigue siendo necesaria para interrupciones abruptas.
 - La tarea de prueba `5db8a428` debe permanecer `interrumpida` y no se reanuda automáticamente.
+
+
+## Corrección del lanzador: codificación de consola Windows
+- En una prueba controlada, `lanzador_persistente.py` falló al decodificar la salida de `tareas_persistentes.py`: `UnicodeDecodeError` con UTF-8, seguido de `AttributeError` porque `stdout` quedó en `None`.
+- Se corrigió el lanzador para decodificar con `errors="replace"` y tratar una salida nula como cadena vacía antes de analizarla.
+- Commit de la corrección: `42aacbee43c51c2c68deca064bfca13451f513ba`.
+- La corrección aún no está validada en la copia local. Antes de volver a ejecutar el lanzador, copiar la versión actual desde GitHub y comprobar sintaxis.
+- La prueba fallida no demuestra que el agente se ejecutara. Revisar la cola persistente con `listar` antes de otra prueba; no borrar tareas ni editar el JSON manualmente.

@@ -381,3 +381,10 @@ En cada sesión de trabajo:
 - Se guardó la tarea `5db8a428` en estado `pendiente`.
 - El comando `listar` mostró la misma tarea y descripción.
 - Esto confirma guardado y lectura en la misma sesión; queda pendiente verificar persistencia tras cerrar y reabrir PowerShell.
+
+
+## 2026-10-24 — Persistencia tras cerrar PowerShell verificada
+- Tras cerrar y abrir una nueva sesión de PowerShell, `tareas_persistentes.py listar` mostró la tarea `5db8a428` en estado `pendiente`.
+- `tareas_persistentes.py recuperar` mostró la misma tarea sin ejecutarla y advirtió que la recuperación solo muestra estado.
+- Resultado: persistencia local tras cierre de sesión verificada. Aún no se ha probado un reinicio completo de Windows ni la integración con el agente principal.
+- Nota: la sugerencia de instalar PowerShell multiplataforma no es necesaria para esta prueba.

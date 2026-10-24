@@ -406,3 +406,12 @@ En cada sesión de trabajo:
 - Riesgo detectado antes de ejecutarlo: el borrador usa `subprocess.run(..., input=..., capture_output=True)` para iniciar el agente. Eso consume la entrada estándar y no permite responder de forma interactiva a las confirmaciones del agente; por tanto, no debe usarse todavía para tareas reales.
 - Próximo paso obligatorio: corregir el flujo interactivo y la clasificación de estados antes de ejecutar; conservar intactos `ciclo_agente.py`, `ciclo_agente_persistente.py` y `tareas_pendientes.json`.
 - Seguridad: la cola existente contiene la tarea de prueba `5db8a428` en estado `interrumpida`; no se ha reanudado ni modificado.
+
+
+## 2026-10-24 — Corrección del lanzador interactivo
+- Se guardó `ciclo_agente_persistente.py` como copia independiente basada en el agente corregido del repositorio. Commit inicial: `b262fb73c4fabfdd562cc6ecd13f13b54bbc0d72`.
+- Se añadieron retornos explícitos de estado en las rutas normales y códigos de salida: 0 completada, 3 cancelada, 2 fallida. Commits de ajuste: `165c43c20cd533911786cb5db09f7d340e925859` y `9356b85e8141f23a255e72a4ad275f0fdcc94b02`.
+- Se corrigió `lanzador_persistente.py` para iniciar el agente con la tarea como argumento y heredar la consola, de modo que las confirmaciones humanas sigan siendo interactivas. Commit: `3c06c9b80d45333d72b664a95d6e009c054972bc`.
+- Importante: el código remoto todavía debe sincronizarse con los archivos locales en `D:\\AgenteIA`; no ejecutar hasta copiar ambos archivos y pasar `py -m py_compile` a los dos.
+- Pruebas funcionales pendientes. No se afirma todavía que la clasificación de estados sea fiable ante un cierre forzado; la recuperación manual sigue siendo necesaria para interrupciones abruptas.
+- La tarea de prueba `5db8a428` debe permanecer `interrumpida` y no se reanuda automáticamente.

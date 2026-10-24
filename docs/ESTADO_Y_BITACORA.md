@@ -350,3 +350,11 @@ En cada sesión de trabajo:
 - Estado: ciclo de lectura → generación de resumen → autorización → escritura exclusiva → verificación completado con éxito en esta prueba.
 - Límites conocidos: todavía depende de un modelo local para redactar el resumen; la prueba no demuestra autonomía prolongada ni aislamiento robusto. La ruta y las acciones siguen restringidas por el programa y las escrituras requieren autorización humana.
 - Próximo paso recomendado: hacer una prueba negativa segura creando previamente un archivo de salida con el mismo nombre y confirmar que el programa se niega a sobrescribirlo; después integrar registro de progreso y un modo de detener/pausar el agente.
+
+
+## 2026-10-24 — Prueba de no sobrescritura y codificación
+- La prueba real con `resumen_final.txt` terminó con `FileExistsError` y el archivo existente no se sobrescribió.
+- La lectura con `Get-Content -Encoding utf8` mostró correctamente la palabra «guía»; el texto guardado está bien y el problema era la interpretación predeterminada de PowerShell.
+- Se actualizó `ciclo_agente_corregido.py` para comprobar si el destino existe antes de pedir autorización para leer el origen o llamar al modelo.
+- Commit del código: `c5c3f6e1c30354969adc1153bf82799b96ab63d4`.
+- Pendiente: copiar esta versión actualizada al equipo local y comprobar que rechaza el destino existente desde el principio.

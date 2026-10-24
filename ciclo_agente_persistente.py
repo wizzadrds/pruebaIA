@@ -34,7 +34,12 @@ def resolver_ruta(nombre):
     base = nombre.split(".")[0].upper()
     if re.fullmatch(r"(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])", base):
         raise ValueError("Nombre reservado por Windows.")
-    ruta = (SANDBOX / nombre).resolve()
+    # Comprueba la entrada sin resolver primero: resolve() sigue los enlaces
+    # simbólicos y podría ocultar que el nombre dentro de sandbox es un enlace.
+    ruta_entrada = SANDBOX / nombre
+    if ruta_entrada.is_symlink():
+        raise ValueError("No se permiten enlaces simbólicos dentro de la sandbox.")
+    ruta = ruta_entrada.resolve()
     if not ruta.is_relative_to(SANDBOX) or ruta == SANDBOX:
         raise ValueError("Ruta rechazada: fuera de la sandbox.")
     return ruta

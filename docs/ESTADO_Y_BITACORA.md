@@ -2,7 +2,7 @@
 
 **Proyecto:** pruebaIA  
 **Última actualización:** 2026-10-24  
-**Estado general:** preparación inicial; conectividad LAN y servidor web de prueba verificados. La ejecución de un modelo local todavía está pendiente de probar.
+**Estado general:** modelo local Qwen2.5-Coder 7B descargado y primera respuesta en español verificada; conectividad LAN y servidor web de prueba verificados. El agente autónomo aún no está integrado.
 
 ## 1. Objetivo y alcance
 
@@ -65,7 +65,9 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 
 ## 4. Plan técnico previsto
 
-1. Probar un modelo local con Ollama: `qwen2.5-coder:7b`.
+El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.
+
+1. **Completado parcialmente:** descargar y probar `qwen2.5-coder:7b` en Ollama. Descarga finalizada (aprox. 4,7 GB) y primera respuesta en español con un ejemplo de Python recibida. Aún no se han probado ejecución de código, corrección iterativa ni tareas autónomas.
 2. Si hay errores de memoria o el rendimiento no es adecuado, probar `qwen2.5-coder:3b`.
 3. Comprobar respuesta en español y generación de un programa Python sencillo.
 4. Evaluar el uso de RAM, VRAM, CPU, velocidad y estabilidad antes de añadir más componentes.
@@ -76,25 +78,21 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 
 ## 5. Próximo paso inmediato
 
-**Pendiente:** ejecutar una prueba real del modelo Qwen coder en el sobremesa.
+**Pendiente:** verificar que el modelo puede generar código de forma estructurada y comprobar el estado local del modelo. En la misma sesión de Ollama, se recibió una respuesta en español a la petición de un programa de contabilidad básico. La respuesta demuestra generación de código, no que el código se haya ejecutado ni validado.
 
-En una segunda ventana de PowerShell, dejando abierta la ventana que ejecuta `panel.py`, ejecutar:
+Siguiente comprobación, en PowerShell del sobremesa (puede salir del chat de Ollama con `/bye`):
 
 ```powershell
-ollama run qwen2.5-coder:7b
+ollama ps
 ```
 
-La primera ejecución puede descargar varios GB. Cuando aparezca el prompt del modelo, probar:
-
-```text
-Responde en español y escribe un pequeño programa Python que muestre Hola mundo.
-```
-
-Después, registrar el resultado exacto, posibles errores y rendimiento. Si no funciona o consume demasiados recursos, probar la variante 3B.
+Copiar la salida. Después comprobaremos Git y Blender antes de instalar un agente adicional, y evaluaremos el camino de integración más compatible con el hardware disponible.
 
 ## 6. Pendientes
 
-- [ ] Ejecutar y validar `qwen2.5-coder:7b`.
+- [x] Descargar `qwen2.5-coder:7b` y confirmar una primera respuesta en español.
+- [ ] Ejecutar y validar código generado por el modelo.
+- [ ] Medir consumo de RAM/VRAM y velocidad durante una tarea real.
 - [ ] Registrar uso aproximado de RAM/VRAM y velocidad.
 - [ ] Inventariar el hardware y sistema del portátil.
 - [ ] Comprobar si Git está instalado.
@@ -111,6 +109,7 @@ Después, registrar el resultado exacto, posibles errores y rendimiento. Si no f
 - Empezar con Qwen2.5-Coder 7B y tener 3B como alternativa.
 - Usar la unidad D: para modelos y proyectos cuando sea posible.
 - No considerar el panel conectado a la IA hasta que se implemente y se pruebe esa integración.
+- La primera respuesta del modelo no equivale a tener un agente autónomo; priorizar la integración de herramientas y ciclos de trabajo verificables.
 - No afirmar que una herramienta funciona solo porque esté instalada: comprobar la tarea real.
 
 ## 8. Protocolo para futuras sesiones

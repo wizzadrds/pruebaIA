@@ -185,10 +185,12 @@ Devuelve exclusivamente un objeto JSON válido.
 Acciones permitidas:
 {{"accion":"leer_archivo","nombre":"prueba.txt"}}
 {{"accion":"crear_archivo","nombre":"resultado.txt","contenido":"texto"}}
+{{"accion":"mostrar_resumen","texto":"1. Primer punto.\n2. Segundo punto.\n3. Tercer punto."}}
 {{"accion":"terminar","mensaje":"explicación final"}}
 Usa el historial real. No repitas lecturas correctas. No sobrescribas archivos.
 No inventes resultados ni afirmes que una acción se completó sin confirmación.
 Si la tarea pide resumir y guardar, usa el contenido leído y crea el archivo solicitado.
+Si pide resumir para mostrar por pantalla sin modificar archivos, usa una lectura verificada del historial y devuelve mostrar_resumen con exactamente tres puntos numerados en texto. Esta acción solo imprime en pantalla; no lee ni escribe archivos.
 TAREA: {tarea}
 HISTORIAL REAL: {json.dumps(historial, ensure_ascii=False)}
 """
@@ -209,6 +211,7 @@ def validar_accion(accion):
     esquemas = {
         "leer_archivo": {"accion", "nombre"},
         "crear_archivo": {"accion", "nombre", "contenido"},
+        "mostrar_resumen": {"accion", "texto"},
         "terminar": {"accion", "mensaje"},
     }
     if tipo not in esquemas or set(accion) != esquemas[tipo]:
@@ -219,6 +222,14 @@ def validar_accion(accion):
         not isinstance(accion["contenido"], str) or not accion["contenido"].strip()
     ):
         raise ValueError("El contenido debe ser texto no vacío.")
+    if tipo == "mostrar_resumen":
+        texto = accion["texto"]
+        if not isinstance(texto, str) or not texto.strip():
+            raise ValueError("El resumen debe ser texto no vacío.")
+        puntos = [line for line in texto.splitlines()
+                  if re.match(r"^\\s*[1-3][.)]\\s+\\S", line)]
+        if len(puntos) != 3:
+            raise ValueError("El resumen debe contener exactamente tres puntos numerados.")
     if tipo == "terminar" and not isinstance(accion["mensaje"], str):
         raise ValueError("El mensaje final debe ser texto.")
     return tipo
@@ -239,6 +250,25 @@ def ejecutar_ciclo_general(tarea):
                 "resultado": "Lectura repetida bloqueada.", "estado": "bloqueada",
             })
             continue
+
+        if tipo == "mostrar_resumen":
+            hay_lectura_verificada = any(
+                isinstance(item.get("accion"), dict)
+                and item["accion"].get("accion") == "leer_archivo"
+                and isinstance(item.get("resultado"), str)
+                and item.get("resultado").strip()
+                and item.get("estado") != "bloqueada"
+                for item in historial
+            )
+            if not hay_lectura_verificada:
+                raise ValueError("No se puede mostrar un resumen sin una lectura verificada en el historial.")
+            print("\nResumen basado en el contenido leído:")
+            print(accion["texto"])
+            registrar({
+                "tarea": tarea, "paso": paso, "accion": accion,
+                "resultado": accion["texto"], "estado": "mostrado_en_pantalla",
+            })
+            return "completada"
 
         print("\nAcción propuesta:")
         print(json.dumps(accion, ensure_ascii=False, indent=2))

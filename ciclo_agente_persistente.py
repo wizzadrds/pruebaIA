@@ -74,6 +74,7 @@ def llamar_modelo(prompt):
             "model": MODEL,
             "messages": [{"role": "user", "content": prompt}],
             "stream": False,
+            "format": "json",
         },
         timeout=TIMEOUT_SEGUNDOS,
     )
@@ -242,12 +243,21 @@ def ejecutar_ciclo_general(tarea):
         print("\nAcción propuesta:")
         print(json.dumps(accion, ensure_ascii=False, indent=2))
         if tipo == "terminar":
-            print("\nEl agente termina:")
+            print("\nEl agente propone terminar:")
             print(accion["mensaje"])
+            # Una declaración del modelo no demuestra que la tarea esté cumplida.
+            if not historial:
+                print("No hay acciones verificadas que demuestren progreso; la tarea no se marcará como completada.")
+                registrar({
+                    "tarea": tarea, "paso": paso, "accion": accion,
+                    "estado": "terminacion_sin_progreso_verificado",
+                })
+                return "fallida"
             registrar({
                 "tarea": tarea, "paso": paso, "accion": accion,
-                "estado": "terminado",
+                "estado": "terminado_con_acciones_verificadas",
             })
+            print("Aviso: el historial contiene acciones verificadas, pero la finalización semántica aún requiere revisión humana.")
             return "completada"
 
         if not pedir_autorizacion("¿Autorizas la acción mostrada?"):

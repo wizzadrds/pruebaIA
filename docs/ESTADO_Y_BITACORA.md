@@ -87,6 +87,14 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 2. El registro de aplicaciones confirma Blender `5.2.3`, con ubicación `C:\\Program Files\\Blender Foundation\\Blender 5.2\\`.
 3. Conclusión: Blender sí está instalado; `blender` no está disponible como comando en PowerShell porque la carpeta no parece estar en PATH. No es necesario reinstalarlo.
 
+
+
+### 2026-10-24 — ejecución de Blender por línea de comandos
+
+1. Se ejecutó `& "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe" --version` desde PowerShell.
+2. Resultado confirmado: `Blender 5.2.3 LTS`, build para Windows, rama `blender-v5.2-release`.
+3. Conclusión: Blender se puede invocar por ruta completa desde PowerShell. La siguiente prueba debe verificar la ejecución de un script en modo background y la creación de un archivo de escena, antes de integrarlo con el agente.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

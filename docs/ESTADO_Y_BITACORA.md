@@ -388,3 +388,11 @@ En cada sesión de trabajo:
 - `tareas_persistentes.py recuperar` mostró la misma tarea sin ejecutarla y advirtió que la recuperación solo muestra estado.
 - Resultado: persistencia local tras cierre de sesión verificada. Aún no se ha probado un reinicio completo de Windows ni la integración con el agente principal.
 - Nota: la sugerencia de instalar PowerShell multiplataforma no es necesaria para esta prueba.
+
+
+## 2026-10-24 — Recuperación de tarea interrumpida verificada
+- La tarea `5db8a428` se cambió manualmente a `en_curso`.
+- Al ejecutar `recuperar`, el estado cambió a `interrumpida`.
+- `ver 5db8a428` confirmó que la nota de seguridad y la marca de tiempo quedaron persistidas en JSON.
+- Resultado: recuperación de estado verificada; no hubo ejecución automática.
+- Próximo paso: diseñar integración con el agente principal en modo conservador, con registro de eventos y aprobación explícita antes de acciones que escriban.

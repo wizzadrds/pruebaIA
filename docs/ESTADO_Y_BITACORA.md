@@ -63,6 +63,15 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 2. Resultado confirmado: `ollama version is 0.40.10`.
 3. Esto confirma que el comando Ollama está instalado y responde. Todavía no confirma que se haya descargado o ejecutado un modelo.
 
+
+
+### 2026-10-24 — estado del modelo en Ollama
+
+1. Se ejecutó `ollama ps` después de la primera respuesta del modelo.
+2. Salida registrada: modelo `qwen2.5-coder:7b`, ID `dae161e27b0e`, tamaño informado `5.2 GB`, procesador `18%/82% CPU/GPU`, contexto `4096`, runner `llamacpp`, descarga prevista por inactividad en 3 minutos.
+3. Interpretación: el modelo está cargado y reparte el procesamiento entre CPU y GPU. El contexto actual es de 4096 tokens. Esta salida no mide por sí sola la velocidad ni confirma la capacidad de ejecutar tareas autónomas.
+4. Decisión: mantener 7B de momento y no cambiar de modelo sin una prueba que lo justifique.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

@@ -21,8 +21,25 @@ MAX_MENSAJE_FINAL = 1200
 TIMEOUT_SEGUNDOS = 180
 
 
+def _resumir_dato_registro(valor):
+    """Sustituye textos potencialmente sensibles por metadatos de longitud."""
+    if isinstance(valor, dict):
+        salida = {}
+        for clave, contenido in valor.items():
+            if clave in {"contenido", "texto"} and isinstance(contenido, str):
+                salida[clave] = f"[texto omitido; {len(contenido)} caracteres]"
+            elif clave == "resultado" and isinstance(contenido, str):
+                salida[clave] = f"[resultado textual omitido; {len(contenido)} caracteres]"
+            else:
+                salida[clave] = _resumir_dato_registro(contenido)
+        return salida
+    if isinstance(valor, list):
+        return [_resumir_dato_registro(elemento) for elemento in valor]
+    return valor
+
+
 def registrar(datos):
-    entrada = dict(datos)
+    entrada = _resumir_dato_registro(dict(datos))
     entrada["fecha"] = datetime.now().astimezone().isoformat()
     with LOG_FILE.open("a", encoding="utf-8") as archivo:
         archivo.write(json.dumps(entrada, ensure_ascii=False) + "\n")

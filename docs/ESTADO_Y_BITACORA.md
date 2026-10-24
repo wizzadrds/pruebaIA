@@ -210,6 +210,15 @@ El listado de PowerShell confirmó que en `D:\\AgenteIA` existen:
 
 Conclusión: los componentes iniciales están separados y podemos crear un nuevo archivo para el ciclo de herramientas sin reemplazar `agente.py` ni `herramientas.py`. Antes de conectar el modelo, se implementará un archivo nuevo con acciones limitadas y registro de cada operación.
 
+
+
+### 2026-10-24 — prueba de salida estructurada del modelo
+
+- Se pidió a `qwen2.5-coder:7b` que devolviera un objeto JSON para la acción `leer_archivo`.
+- El modelo devolvió el objeto solicitado, pero lo envolvió en un bloque Markdown ```json ... ```.
+- Conclusión: puede seguir un esquema sencillo, pero la salida no es JSON puro de forma fiable. El agente deberá usar el modo JSON estructurado de la API cuando esté disponible y validar esquema, tipos, nombres de acción y rutas; nunca ejecutar la respuesta sin validarla.
+- Próximo paso: crear `ciclo_agente.py` como archivo nuevo, sin reemplazar los componentes existentes, con acciones cerradas y sin ejecución arbitraria de comandos.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

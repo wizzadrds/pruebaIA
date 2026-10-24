@@ -219,6 +219,16 @@ Conclusión: los componentes iniciales están separados y podemos crear un nuevo
 - Conclusión: puede seguir un esquema sencillo, pero la salida no es JSON puro de forma fiable. El agente deberá usar el modo JSON estructurado de la API cuando esté disponible y validar esquema, tipos, nombres de acción y rutas; nunca ejecutar la respuesta sin validarla.
 - Próximo paso: crear `ciclo_agente.py` como archivo nuevo, sin reemplazar los componentes existentes, con acciones cerradas y sin ejecución arbitraria de comandos.
 
+
+
+### 2026-10-24 — primer ciclo de herramienta con autorización humana
+
+- Se creó `D:\\AgenteIA\\ciclo_agente.py` como archivo nuevo, sin sustituir `agente.py` ni `herramientas.py`.
+- El modelo propuso el JSON válido `{"accion":"leer_archivo","nombre":"prueba.txt"}`.
+- El programa mostró la acción antes de ejecutarla, pidió autorización explícita y, tras recibir `SI`, leyó el archivo dentro de la sandbox y mostró el contenido esperado.
+- Conclusión: se ha verificado el ciclo básico modelo → acción estructurada → confirmación humana → herramienta restringida → resultado. Aún no es autonomía prolongada; falta verificar creación de archivos nuevos, errores, límites de iteración, cancelación y robustez de rutas.
+- Mantener la confirmación humana activada mientras se prueban las herramientas. No activar ejecución de comandos arbitrarios.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

@@ -149,6 +149,16 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Conclusión: podemos hacer llamadas HTTP desde Python a la API local de Ollama sin instalar esta dependencia.
 - Próximo paso propuesto: crear un primer cliente pequeño en `D:\\AgenteIA` que envíe una instrucción al modelo y guarde la respuesta en un archivo de registro; todavía no tendrá ejecución arbitraria de comandos.
 
+
+
+### 2026-10-24 — primer cliente Python para Ollama
+
+- Se creó `D:\\AgenteIA\\agente.py`, que realiza una petición POST a la API local `/api/chat` usando `requests` y el modelo `qwen2.5-coder:7b`.
+- La ejecución devolvió exactamente `PRIMER_CLIENTE_FUNCIONA`.
+- Se confirmó la creación del registro `D:\\AgenteIA\\registro.jsonl`, con fecha, modelo, instrucción y respuesta.
+- Conclusión: el cliente Python puede comunicarse con el modelo y conservar un registro de actividad. Aún no se han añadido ejecución de herramientas, ciclo autónomo ni recuperación automática de errores.
+- Próximo paso: verificar que el registro JSONL se puede leer correctamente y luego diseñar una primera herramienta segura y limitada.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

@@ -113,6 +113,14 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Conclusión: la prueba de automatización de Blender queda confirmada tanto por la salida del programa como por la existencia del archivo en disco.
 - Próximo objetivo: empezar la integración de un agente que use el modelo local y ejecute herramientas reales con límites, registro de acciones y posibilidad de detenerlo.
 
+
+
+### 2026-10-24 — versión de Ollama
+
+- Comando ejecutado: `ollama --version`.
+- Resultado: `ollama version is 0.40.10`.
+- Conclusión: CLI de Ollama está instalado y responde. Aún falta verificar que el servicio HTTP local esté activo y que la API responda antes de integrarla con el agente.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

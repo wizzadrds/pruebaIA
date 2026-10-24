@@ -260,8 +260,25 @@ def ejecutar_ciclo_general(tarea):
                 and item.get("estado") != "bloqueada"
                 for item in historial
             )
-            if not hay_lectura_verificada:
-                raise ValueError("No se puede mostrar un resumen sin una lectura verificada en el historial.")
+            if not hay_lectura_verificada or not any(
+                palabra in tarea.casefold()
+                for palabra in ("resumen", "resume", "resumir", "mostrar por pantalla", "muestra por pantalla")
+            ):
+                motivo = (
+                    "Resumen bloqueado: no hay una lectura verificada en el historial."
+                    if not hay_lectura_verificada
+                    else "Resumen bloqueado: la tarea no solicita un resumen para mostrar por pantalla."
+                )
+                print(motivo)
+                historial.append({
+                    "paso": paso, "accion": accion,
+                    "resultado": motivo, "estado": "bloqueada",
+                })
+                registrar({
+                    "tarea": tarea, "paso": paso, "accion": accion,
+                    "resultado": motivo, "estado": "accion_no_corresponde",
+                })
+                continue
             print("\nResumen basado en el contenido leído:")
             print(accion["texto"])
             registrar({

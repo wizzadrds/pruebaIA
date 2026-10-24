@@ -164,3 +164,18 @@ Durante la configuración se compartió en el chat una contraseña de Ubuntu. Po
 4. No tratar los extractos de búsqueda como prueba suficiente por sí solos: el agente debe distinguir resultados de búsqueda de páginas realmente leídas y no inventar afirmaciones.
 5. Mantener el puerto enlazado a `127.0.0.1`; no exponer el servicio a Internet sin configurar controles de seguridad apropiados.
 
+## Actualización: integración de SearXNG en copia de trabajo (2026-10-24)
+
+### Pruebas confirmadas
+1. Se creó una copia de trabajo en `D:\\AgenteIA\\ciclo_agente_persistente_wikipedia.py`; el archivo original `D:\\AgenteIA\\ciclo_agente_persistente.py` permanece sin modificar.
+2. Se añadió la constante `URL_SEARXNG = "http://127.0.0.1:8080/search"` a la copia de trabajo.
+3. Se sustituyó `buscar_web` para consultar primero SearXNG mediante JSON y recurrir a la API pública de Wikipedia si SearXNG falla o no produce resultados utilizables.
+4. `py -m py_compile` terminó sin errores tras el cambio.
+5. La consulta directa a SearXNG para `Python 3.14` devolvió títulos, URLs y extractos.
+6. La llamada directa a `buscar_web("Python 3.14")` desde la copia de trabajo devolvió cinco resultados, incluidos Python.org y docs.python.org. Esto verifica la conexión entre el agente de prueba y SearXNG.
+
+### Alcance y limitaciones
+- La prueba confirma la búsqueda y recepción de extractos; no confirma todavía que el agente lea el contenido completo de cada página, resuma con precisión o cite correctamente las fuentes en una conversación completa.
+- No se ha modificado ni desplegado el archivo original.
+- La instancia SearXNG debe mantenerse ligada a `127.0.0.1`. Antes de uso prolongado, cambiar la clave provisional `server.secret_key` por un valor aleatorio privado y revisar la configuración de seguridad.
+- Próxima tarea: probar el flujo de lectura y resumen de páginas en la copia de trabajo, comprobar que las afirmaciones se apoyan en contenido realmente leído y que las URLs quedan registradas.

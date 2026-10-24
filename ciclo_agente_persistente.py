@@ -3,6 +3,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote_plus
 
 import requests
 
@@ -19,6 +20,8 @@ MAX_RESPUESTA_MODELO = 12000
 MAX_RESUMEN_PANTALLA = 1200
 MAX_MENSAJE_FINAL = 1200
 TIMEOUT_SEGUNDOS = 180
+TIMEOUT_BUSQUEDA_SEGUNDOS = 20
+MAX_RESULTADOS_WEB = 5
 
 
 def _resumir_dato_registro(valor):
@@ -130,6 +133,55 @@ def llamar_modelo(prompt):
     return texto
 
 
+def buscar_web(consulta):
+    """Busca en DuckDuckGo HTML y devuelve hasta cinco resultados con sus URL."""
+    if not isinstance(consulta, str) or not consulta.strip() or len(consulta) > 500:
+        raise ValueError("La consulta web debe tener entre 1 y 500 caracteres.")
+    url = "https://html.duckduckgo.com/html/?q=" + quote_plus(consulta.strip())
+    respuesta = requests.get(
+        url,
+        headers={"User-Agent": "Mozilla/5.0 (compatible; AgenteIA/1.0)"},
+        timeout=TIMEOUT_BUSQUEDA_SEGUNDOS,
+    )
+    respuesta.raise_for_status()
+    from html.parser import HTMLParser
+    class Parser(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.items, self.item, self.campo = [], None, None
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            clases = attrs.get("class", "").split()
+            if tag == "a" and "result__a" in clases and attrs.get("href"):
+                self.item = {"titulo": "", "url": attrs["href"], "extracto": ""}
+                self.campo = "titulo"
+            elif self.item is not None and "result__snippet" in clases:
+                self.campo = "extracto"
+        def handle_data(self, data):
+            if self.item is not None and self.campo in {"titulo", "extracto"}:
+                self.item[self.campo] += data
+        def handle_endtag(self, tag):
+            if self.item is not None and tag == "a" and self.campo == "titulo":
+                self.items.append(self.item)
+                self.item, self.campo = None, None
+    parser = Parser()
+    parser.feed(respuesta.text)
+    salida, vistos = [], set()
+    for item in parser.items:
+        enlace = item["url"].strip()
+        titulo = " ".join(item["titulo"].split())
+        extracto = " ".join(item["extracto"].split())
+        if not enlace.startswith(("https://", "http://")) or not titulo or enlace in vistos:
+            continue
+        vistos.add(enlace)
+        salida.append({"titulo": titulo[:300], "url": enlace[:2000], "extracto": extracto[:1200]})
+        if len(salida) >= MAX_RESULTADOS_WEB:
+            break
+    if not salida:
+        raise ValueError("La búsqueda web no devolvió resultados utilizables.")
+    return salida
+
+
 def generar_resumen(tarea, nombre_origen, contenido):
     prompt = f"""
 Resume el texto siguiente en una sola frase en español.
@@ -226,9 +278,11 @@ def consultar_modelo(tarea, historial, paso):
     prompt = f"""
 Eres un agente con herramientas limitadas. Paso {paso}/{MAX_PASOS}.
 Devuelve exclusivamente un objeto JSON válido.
+Estilo: sé directo, natural y conciso. No inventes; si no sabes, dilo. Da opiniones claras cuando se pidan y distingue hechos de opiniones. Sin preámbulos ni frases de relleno.
 Acciones permitidas:
 {{"accion":"leer_archivo","nombre":"prueba.txt"}}
 {{"accion":"crear_archivo","nombre":"resultado.txt","contenido":"texto"}}
+{{"accion":"buscar_web","consulta":"consulta concreta"}}
 {{"accion":"mostrar_resumen","texto":"1. Primer punto.\n2. Segundo punto.\n3. Tercer punto."}}
 {{"accion":"terminar","mensaje":"explicación final"}}
 Usa el historial real. No repitas lecturas correctas. No sobrescribas archivos.
@@ -257,6 +311,7 @@ def validar_accion(accion):
         "leer_archivo": {"accion", "nombre"},
         "crear_archivo": {"accion", "nombre", "contenido"},
         "mostrar_resumen": {"accion", "texto"},
+        "buscar_web": {"accion", "consulta"},
         "terminar": {"accion", "mensaje"},
     }
     if tipo not in esquemas or set(accion) != esquemas[tipo]:
@@ -267,6 +322,10 @@ def validar_accion(accion):
         not isinstance(accion["contenido"], str) or not accion["contenido"].strip()
     ):
         raise ValueError("El contenido debe ser texto no vacío.")
+    if tipo == "buscar_web":
+        consulta = accion["consulta"]
+        if not isinstance(consulta, str) or not consulta.strip() or len(consulta) > 500:
+            raise ValueError("La consulta web debe tener entre 1 y 500 caracteres.")
     if tipo == "mostrar_resumen":
         texto = accion["texto"]
         if not isinstance(texto, str) or not texto.strip():
@@ -393,9 +452,14 @@ def ejecutar_ciclo_general(tarea):
         if tipo == "leer_archivo":
             resultado = leer_archivo(accion["nombre"])
             lecturas.add(accion["nombre"].casefold())
-        else:
+        elif tipo == "crear_archivo":
             ruta = crear_archivo_nuevo(accion["nombre"], accion["contenido"])
             resultado = f"Archivo creado y verificado: {ruta.name}"
+        else:
+            resultados = buscar_web(accion["consulta"])
+            resultado = "\\n".join(f"{i}. {x['titulo']}\\nURL: {x['url']}\\nExtracto: {x['extracto'] or '(sin extracto)'}" for i, x in enumerate(resultados, 1))
+            print("\\nResultados web:")
+            print(resultado)
 
         print("\nResultado real:")
         print(resultado)

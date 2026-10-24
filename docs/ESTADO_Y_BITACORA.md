@@ -168,6 +168,14 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Conclusión: el registro de ejecución es legible y conserva la información de la petición/respuesta. El cliente se ejecutó otra vez durante esta comprobación, por lo que puede haber más de una entrada en el archivo.
 - Próximo paso: añadir una herramienta de prueba con alcance limitado (crear/leer un archivo dentro de `D:\\AgenteIA\\sandbox`), sin ejecutar comandos arbitrarios del sistema.
 
+
+
+### 2026-10-24 — carpeta sandbox creada y verificada
+
+- Se creó `D:\\AgenteIA\\sandbox\\prueba.txt` con texto de prueba.
+- PowerShell confirmó la ruta, tamaño de 155 bytes y mostró el contenido esperado.
+- Conclusión: la carpeta de pruebas está disponible. Antes de permitir que el modelo invoque herramientas, se implementará una capa Python con operaciones explícitas y validación de rutas confinadas a esta carpeta.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

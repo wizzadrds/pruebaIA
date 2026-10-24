@@ -128,6 +128,13 @@ def ejecutar_tarea_resumen(tarea):
     if nombre_origen.casefold() == nombre_salida.casefold():
         raise ValueError("El archivo de salida no puede ser el archivo de origen.")
 
+    # Comprobación temprana: no pedir permisos ni llamar al modelo si el destino ya existe.
+    ruta_salida = resolver_ruta(nombre_salida)
+    if ruta_salida.exists() or ruta_salida.is_symlink():
+        raise FileExistsError(
+            f"Ya existe {nombre_salida}; no se sobrescribirá. Elige otro nombre."
+        )
+
     if not pedir_autorizacion(f"Voy a leer el archivo {nombre_origen}."):
         print("Lectura cancelada.")
         return

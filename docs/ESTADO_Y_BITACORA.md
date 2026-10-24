@@ -104,6 +104,15 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Aparecieron dos advertencias de rutas de recursos de pinceles/materiales de Blender; no impidieron guardar el archivo en esta prueba.
 - Conclusión: confirmado que Blender puede ejecutar un script Python sin interfaz gráfica y guardar un proyecto .blend. Falta comprobar la existencia del archivo y, más adelante, abrirlo/validarlo visualmente.
 
+
+
+### 2026-10-24 — verificación del archivo de escena
+
+- PowerShell confirmó que existe `D:\\AgenteIA\\prueba.blend`.
+- Tamaño informado: 94.614 bytes. Última modificación: 24/10/2026 16:08:02.
+- Conclusión: la prueba de automatización de Blender queda confirmada tanto por la salida del programa como por la existencia del archivo en disco.
+- Próximo objetivo: empezar la integración de un agente que use el modelo local y ejecute herramientas reales con límites, registro de acciones y posibilidad de detenerlo.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

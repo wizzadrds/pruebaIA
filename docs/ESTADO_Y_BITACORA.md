@@ -374,3 +374,10 @@ En cada sesión de trabajo:
 - Importante: esta herramienta no ejecuta tareas ni reanuda acciones; está separada del agente principal para probar la persistencia con seguridad.
 - Archivo: https://github.com/wizzadrds/pruebaIA/blob/main/tareas_persistentes.py
 - Pendiente: descargar al equipo, crear una tarea de prueba, cerrar y reabrir PowerShell, y comprobar que la tarea sigue guardada.
+
+
+## 2026-10-24 — Primera prueba de cola persistente superada
+- El usuario ejecutó `tareas_persistentes.py nueva "Prueba de memoria persistente; no modificar archivos"`.
+- Se guardó la tarea `5db8a428` en estado `pendiente`.
+- El comando `listar` mostró la misma tarea y descripción.
+- Esto confirma guardado y lectura en la misma sesión; queda pendiente verificar persistencia tras cerrar y reabrir PowerShell.

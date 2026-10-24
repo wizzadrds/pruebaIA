@@ -131,6 +131,15 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - Seguridad: mantener la API en el equipo local; no exponer el puerto 11434 a Internet ni abrirlo en el router.
 - Siguiente paso: hacer una petición pequeña a `/api/chat` y verificar una respuesta generada por la API.
 
+
+
+### 2026-10-24 — generación de respuesta mediante la API de chat
+
+- Se envió una petición POST a `http://localhost:11434/api/chat` usando PowerShell, el modelo `qwen2.5-coder:7b` y `stream = false`.
+- El texto recibido fue exactamente `API_FUNCIONA`, tal como se solicitó.
+- Conclusión: la comunicación programática con el modelo funciona de extremo a extremo (petición JSON → inferencia local → respuesta JSON).
+- Esto todavía no prueba que exista un agente autónomo: falta implementar la orquestación, ejecución de herramientas, comprobación de resultados, límites de seguridad, registro de acciones y pausa/parada.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

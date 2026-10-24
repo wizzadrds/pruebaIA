@@ -358,3 +358,10 @@ En cada sesión de trabajo:
 - Se actualizó `ciclo_agente_corregido.py` para comprobar si el destino existe antes de pedir autorización para leer el origen o llamar al modelo.
 - Commit del código: `c5c3f6e1c30354969adc1153bf82799b96ab63d4`.
 - Pendiente: copiar esta versión actualizada al equipo local y comprobar que rechaza el destino existente desde el principio.
+
+
+## 2026-10-24 — Verificación de detección temprana
+- El usuario instaló la versión actualizada de `ciclo_agente_corregido.py` en `D:\AgenteIA\ciclo_agente.py`.
+- Prueba con destino existente: el agente devolvió `FileExistsError` antes de solicitar autorización de lectura; no llamó al modelo y no sobrescribió `resumen_final.txt`.
+- Resultado: correcto.
+- Próximo objetivo: diseñar persistencia local de tareas y recuperación explícita tras reinicio, manteniendo autorización humana y sin reanudar acciones de escritura automáticamente.

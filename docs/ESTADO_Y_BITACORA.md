@@ -299,3 +299,12 @@ En cada sesión de trabajo:
 - Después, el usuario ejecutó `Get-Content "D:\AgenteIA\sandbox\nota_agente.txt"` y confirmó que el contenido leído del disco coincide exactamente con el solicitado.
 - Estado: creación y lectura posterior verificadas. El ciclo sigue siendo supervisado y limitado a herramientas permitidas; aún no prueba autonomía prolongada ni aislamiento robusto.
 
+
+## Prueba adicional de lectura para preparar un resumen
+
+- Fecha: 2026-10-24.
+- El usuario ejecutó `D:\AgenteIA\ciclo_agente.py` con la tarea de leer `prueba.txt` y mostrar su contenido para preparar un resumen.
+- El modelo propuso `leer_archivo` con `nombre: prueba.txt`; el usuario autorizó con `SI`.
+- Resultado: se devolvió el contenido esperado del archivo.
+- Estado: lectura repetida confirmada. La versión actual ejecuta una acción por ejecución; el próximo objetivo técnico es un ciclo multietapa con aprobación por acción, sin comandos arbitrarios.
+

@@ -176,6 +176,16 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 - PowerShell confirmó la ruta, tamaño de 155 bytes y mostró el contenido esperado.
 - Conclusión: la carpeta de pruebas está disponible. Antes de permitir que el modelo invoque herramientas, se implementará una capa Python con operaciones explícitas y validación de rutas confinadas a esta carpeta.
 
+
+
+### 2026-10-24 — primera herramienta de archivos restringida
+
+- Se creó y ejecutó `D:\\AgenteIA\\herramientas.py`.
+- La herramienta leyó `sandbox\\prueba.txt`, escribió `sandbox\\resultado_agente.txt` y bloqueó correctamente la ruta de prueba `../archivo_fuera.txt`.
+- La consola mostró el carácter BOM al principio del texto leído desde `prueba.txt` (se creó con PowerShell UTF-8 con BOM). No impidió la lectura; se puede limpiar después usando `utf-8-sig` si resulta molesto.
+- Conclusión: las operaciones básicas de lectura/escritura y la comprobación de rutas funcionan en la prueba. Esta validación no constituye un aislamiento fuerte frente a enlaces simbólicos o condiciones de carrera; no se debe tratar como una frontera de seguridad suficiente para ejecutar código no confiable.
+- Próximo paso: conectar el modelo con un conjunto cerrado de herramientas mediante llamadas estructuradas, validar rigurosamente cada argumento y pedir confirmación antes de sobrescribir archivos existentes.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

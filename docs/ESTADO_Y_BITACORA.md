@@ -95,6 +95,15 @@ Crear un agente de IA local en el sobremesa Windows, con acceso desde el portát
 2. Resultado confirmado: `Blender 5.2.3 LTS`, build para Windows, rama `blender-v5.2-release`.
 3. Conclusión: Blender se puede invocar por ruta completa desde PowerShell. La siguiente prueba debe verificar la ejecución de un script en modo background y la creación de un archivo de escena, antes de integrarlo con el agente.
 
+
+
+### 2026-10-24 — prueba de Blender en segundo plano
+
+- Se creó `D:\\AgenteIA\\prueba_blender.py` para borrar los objetos de la escena temporal por defecto, añadir un cubo y guardar el proyecto en `D:\\AgenteIA\\prueba.blend`.
+- Se ejecutó Blender 5.2.3 LTS con `--background --python` y la consola devolvió `Info: Saved as "prueba.blend"`, `PRUEBA_IA_OK: escena guardada` y `Blender quit`.
+- Aparecieron dos advertencias de rutas de recursos de pinceles/materiales de Blender; no impidieron guardar el archivo en esta prueba.
+- Conclusión: confirmado que Blender puede ejecutar un script Python sin interfaz gráfica y guardar un proyecto .blend. Falta comprobar la existencia del archivo y, más adelante, abrirlo/validarlo visualmente.
+
 ## 4. Plan técnico previsto
 
 El objetivo final es un agente autónomo local y gratuito que pueda trabajar durante muchas horas: programar, ejecutar y probar código, corregir errores, trabajar con Git/GitHub, consultar Internet mediante herramientas integradas, crear proyectos 3D con Blender y permitir supervisión desde el portátil. No basta con que el modelo responda en un chat; habrá que integrar un ejecutor/agente, herramientas reales, ciclos de comprobación, registro de avances y controles de seguridad. La autonomía y calidad dependerán del rendimiento del modelo y del hardware.

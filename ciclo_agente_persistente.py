@@ -12,6 +12,12 @@ API_URL = "http://localhost:11434/api/chat"
 MODEL = "qwen2.5-coder:7b"
 LOG_FILE = BASE_DIR / "registro.jsonl"
 MAX_PASOS = 6
+MAX_TAREA_CARACTERES = 2000
+MAX_CONTENIDO_ARCHIVO = 20000
+MAX_CONTENIDO_CREAR = 10000
+MAX_RESPUESTA_MODELO = 12000
+MAX_RESUMEN_PANTALLA = 1200
+MAX_MENSAJE_FINAL = 1200
 TIMEOUT_SEGUNDOS = 180
 
 
@@ -56,10 +62,21 @@ def leer_archivo(nombre):
         raise ValueError("No se permite leer enlaces simbólicos.")
     if not ruta.is_file():
         raise FileNotFoundError(f"No existe el archivo: {nombre}")
-    return ruta.read_text(encoding="utf-8-sig")
+    contenido = ruta.read_text(encoding="utf-8-sig")
+    if len(contenido) > MAX_CONTENIDO_ARCHIVO:
+        raise ValueError(
+            f"El archivo supera el límite de {MAX_CONTENIDO_ARCHIVO} caracteres; no se enviará al modelo."
+        )
+    return contenido
 
 
 def crear_archivo_nuevo(nombre, contenido):
+    if not isinstance(contenido, str) or not contenido.strip():
+        raise ValueError("El contenido debe ser texto no vacío.")
+    if len(contenido) > MAX_CONTENIDO_CREAR:
+        raise ValueError(
+            f"El contenido supera el límite de {MAX_CONTENIDO_CREAR} caracteres."
+        )
     ruta = resolver_ruta(nombre)
     if ruta.exists() or ruta.is_symlink():
         raise FileExistsError(
@@ -88,7 +105,12 @@ def llamar_modelo(prompt):
     texto = datos.get("message", {}).get("content")
     if not isinstance(texto, str) or not texto.strip():
         raise ValueError("El modelo no devolvió texto.")
-    return texto.strip()
+    texto = texto.strip()
+    if len(texto) > MAX_RESPUESTA_MODELO:
+        raise ValueError(
+            f"La respuesta del modelo supera el límite de {MAX_RESPUESTA_MODELO} caracteres."
+        )
+    return texto
 
 
 def generar_resumen(tarea, nombre_origen, contenido):
@@ -232,12 +254,22 @@ def validar_accion(accion):
         texto = accion["texto"]
         if not isinstance(texto, str) or not texto.strip():
             raise ValueError("El resumen debe ser texto no vacío.")
+        if len(texto) > MAX_RESUMEN_PANTALLA:
+            raise ValueError(
+                f"El resumen supera el límite de {MAX_RESUMEN_PANTALLA} caracteres."
+            )
         puntos = [line for line in texto.splitlines()
                   if re.match(r"^\s*[1-3][.)]\s+\S", line)]
-        if len(puntos) != 3:
-            raise ValueError("El resumen debe contener exactamente tres puntos numerados.")
-    if tipo == "terminar" and not isinstance(accion["mensaje"], str):
-        raise ValueError("El mensaje final debe ser texto.")
+        numeros = [int(re.match(r"^\s*([1-3])[.)]\s+\S", line).group(1)) for line in puntos]
+        if numeros != [1, 2, 3]:
+            raise ValueError("El resumen debe contener exactamente los puntos 1, 2 y 3, en ese orden.")
+    if tipo == "terminar":
+        if not isinstance(accion["mensaje"], str):
+            raise ValueError("El mensaje final debe ser texto.")
+        if len(accion["mensaje"]) > MAX_MENSAJE_FINAL:
+            raise ValueError(
+                f"El mensaje final supera el límite de {MAX_MENSAJE_FINAL} caracteres."
+            )
     return tipo
 
 
@@ -373,6 +405,10 @@ def main():
     ).strip()
     if not tarea:
         print("No se ha indicado ninguna tarea.")
+        print("ESTADO_TAREA: fallida")
+        return 2
+    if len(tarea) > MAX_TAREA_CARACTERES:
+        print(f"La tarea supera el límite de {MAX_TAREA_CARACTERES} caracteres.")
         print("ESTADO_TAREA: fallida")
         return 2
 

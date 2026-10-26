@@ -432,3 +432,15 @@ En cada sesión de trabajo:
 - Commit: `d84c9223d80814e342bbf5067a17456d2e77d0da`.
 - Pendiente: copiar el archivo actualizado al equipo local, compilarlo y probar solo con una tarea de bajo riesgo. No reintentar automáticamente las tareas fallidas ni alterar los registros históricos.
 - Limitación conocida: el historial de acciones verificadas no es un verificador general del objetivo. No afirmar autonomía fiable ni finalización correcta hasta añadir comprobaciones específicas por tipo de tarea.
+
+
+## 2026-10-26 — Revisión semántica de resúmenes web (candidata aislada)
+
+- Se aplicó un parche únicamente a `D:\\AgenteIA\\sandbox\\candidato_revision_semantica\\ciclo_agente_candidato.py`; el agente original y el experimental permanecen intactos.
+- SHA-256 de la candidata original: `A32D7F5E3F56F0BBE36C7DFD0624DFD6BFDF4FD7404E3E3DF77F229AB07CB2F6`.
+- SHA-256 de la candidata modificada: `082B9C76F35788947B73BFF26B99B8E30D45974B491DF2C324A6FC2F29287B61`.
+- La copia `ciclo_agente_candidato.py.bak_revision_semantica` conserva el hash original; `BACKUP_ORIGINAL_INTACTO: True`, `PARCHE_PRESENTE: True`, `SINTAXIS: OK`.
+- El revisor valida JSON estricto con estados `respaldada`, `contradicha` o `insuficiente`; bloquea la presentación de un resumen web si no hay fuente válida, hay error de revisión o cualquier punto no queda respaldado.
+- Pruebas de regresión registradas: 19 correctas (13 de `prueba_revision_evidencias`, 6 de `prueba_revisor_simulado`). También pasaron 6 pruebas aisladas de contrato simulado.
+- Limitación importante: no se ha ejecutado el ciclo completo del agente tras el parche ni se ha probado el revisor integrado con Ollama real. Las pruebas simuladas no garantizan detección factual perfecta.
+- Documentación detallada: [Revisión semántica de resúmenes web](REVISION_SEMANTICA_RESUMENES_WEB.md).

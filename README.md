@@ -36,3 +36,5 @@ El sistema debe priorizar soluciones gratuitas o locales, mantener el control de
 
 - [Estado actual y bitácora](docs/ESTADO_Y_BITACORA.md): inventario del entorno, comprobaciones realizadas, decisiones, incidencias y siguiente acción.
 - Cada sesión de trabajo debe actualizar esta documentación con lo que se haya confirmado y los pasos siguientes.
+
+- [Revisión semántica de resúmenes web](docs/REVISION_SEMANTICA_RESUMENES_WEB.md): diseño del parche, hashes, pruebas ejecutadas y validaciones pendientes.

@@ -35,4 +35,5 @@ El sistema debe priorizar soluciones gratuitas o locales, mantener el control de
 ## Documentación de seguimiento
 
 - [Estado actual y bitácora](docs/ESTADO_Y_BITACORA.md): inventario del entorno, comprobaciones realizadas, decisiones, incidencias y siguiente acción.
+- [Validación de búsqueda web y revisión semántica](docs/VALIDACION_BUSQUEDA_WEB_CANDIDATA.md): resultados de pruebas aisladas de la candidata local, hashes y aceptación de extremo a extremo pendiente.
 - Cada sesión de trabajo debe actualizar esta documentación con lo que se haya confirmado y los pasos siguientes.
